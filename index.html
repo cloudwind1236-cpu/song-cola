@@ -1,0 +1,2748 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>人氣可樂販賣機｜歌唱比賽即時充氣投票系統</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Noto Sans TC & Righteous for retro cola vibe -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Righteous&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <!-- QRCode.js for Real Scannable QR Code Generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Noto Sans TC"', 'sans-serif'],
+            display: ['"Righteous"', '"Noto Sans TC"', 'sans-serif'],
+          },
+          colors: {
+            cola: {
+              dark: '#110606',
+              brown: '#1d0b0b',
+              card: '#271010',
+              red: '#e61d2b',
+              redLight: '#ff3b47',
+              gold: '#fbbf24',
+              goldDark: '#d97706',
+              silver: '#e2e8f0',
+              line: '#06C755'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    :root {
+      --cola-red: #e61d2b;
+      --cola-gold: #fbbf24;
+    }
+
+    body {
+      background-color: #110606;
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(230, 29, 43, 0.18) 0%, transparent 55%),
+        radial-gradient(circle at 85% 90%, rgba(251, 191, 36, 0.1) 0%, transparent 45%);
+      color: #f8fafc;
+      overflow-x: hidden;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #180909;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #4a1c1c;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #e61d2b;
+    }
+
+    /* Metallic Cola Can Gradients */
+    .can-body-unselected {
+      background: linear-gradient(90deg, 
+        #450a0a 0%, 
+        #7f1d1d 22%, 
+        #991b1b 38%, 
+        #450a0a 75%, 
+        #2a0606 100%);
+      box-shadow: inset 0 2px 6px rgba(255,255,255,0.18), 0 6px 14px rgba(0,0,0,0.6);
+    }
+
+    .can-body-red {
+      background: linear-gradient(90deg, 
+        #991b1b 0%, 
+        #ef4444 22%, 
+        #f87171 35%, 
+        #dc2626 52%, 
+        #991b1b 82%, 
+        #7f1d1d 100%);
+      box-shadow: 0 0 18px rgba(230, 29, 43, 0.65), inset 0 2px 8px rgba(255,255,255,0.35);
+    }
+
+    .can-body-gold {
+      background: linear-gradient(90deg, 
+        #92400e 0%, 
+        #f59e0b 20%, 
+        #fef08a 36%, 
+        #fbbf24 52%, 
+        #b45309 85%, 
+        #78350f 100%);
+      box-shadow: 0 0 24px rgba(251, 191, 36, 0.75), inset 0 2px 10px rgba(255,255,255,0.65);
+    }
+
+    .can-rim-silver {
+      background: linear-gradient(90deg, #64748b 0%, #f8fafc 35%, #94a3b8 65%, #475569 100%);
+    }
+
+    .can-rim-gold {
+      background: linear-gradient(90deg, #b45309 0%, #fef08a 35%, #f59e0b 65%, #78350f 100%);
+    }
+
+    /* Can Shake / Fizz Animation */
+    @keyframes canPopShake {
+      0% { transform: scale(1) rotate(0deg); }
+      20% { transform: scale(1.08) rotate(-3deg); }
+      40% { transform: scale(1.08) rotate(3deg); }
+      60% { transform: scale(1.04) rotate(-2deg); }
+      80% { transform: scale(1.02) rotate(1deg); }
+      100% { transform: scale(1) rotate(0deg); }
+    }
+    .animate-can-pop {
+      animation: canPopShake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    }
+
+    /* Mystery Can Continuous Fizz Shake for Big Screen */
+    @keyframes continuousFizz {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      25% { transform: translateY(-3px) rotate(-1.2deg); }
+      50% { transform: translateY(0px) rotate(0.8deg); }
+      75% { transform: translateY(-2px) rotate(1.2deg); }
+    }
+    .animate-mystery-fizz {
+      animation: continuousFizz 1.6s ease-in-out infinite;
+    }
+
+    /* Rising Bubble Inside Selected Card */
+    @keyframes riseBubble {
+      0% {
+        transform: translateY(100%) scale(0.5);
+        opacity: 0;
+      }
+      30% {
+        opacity: 0.85;
+      }
+      100% {
+        transform: translateY(-120%) scale(1.15);
+        opacity: 0;
+      }
+    }
+    .card-bubble {
+      position: absolute;
+      bottom: 4px;
+      border-radius: 9999px;
+      pointer-events: none;
+      animation: riseBubble 2.4s infinite ease-in;
+    }
+
+    /* Vending Machine Shelf Shadow */
+    .vending-slot {
+      background: linear-gradient(180deg, rgba(35, 14, 14, 0.85) 0%, rgba(18, 7, 7, 0.95) 85%, #2f1414 100%);
+      border-bottom: 4px solid #3d1a1a;
+    }
+
+    /* Cooler Ice Frost Effect */
+    .cooler-glass {
+      background: rgba(24, 9, 9, 0.94);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-cola-red selection:text-white relative">
+
+  <!-- Background Rising Soda Bubbles Canvas -->
+  <canvas id="fizz-bg-canvas" class="fixed inset-0 pointer-events-none z-0 opacity-55"></canvas>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2 w-11/12 max-w-md pointer-events-none"></div>
+
+  <!-- ================= TOP SYSTEM NAVIGATION SWITCHER ================= -->
+  <header class="sticky top-0 z-40 bg-[#160707]/95 backdrop-blur-md border-b border-red-950/80 shadow-lg">
+    <div class="max-w-7xl mx-auto px-2 sm:px-4 py-2 flex flex-wrap items-center justify-between gap-2">
+      <!-- Brand Title -->
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-cola-red to-red-900 flex items-center justify-center shadow-md shadow-red-600/30 border border-red-400/40">
+          <i class="fa-solid fa-bottle-droplet text-cola-gold text-sm"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-1.5">
+            <span class="font-black tracking-tight text-sm sm:text-base text-white">人氣可樂販賣機</span>
+            <span id="nav-phase-pill" class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+              🧊 預選冰鎮中
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4-View Switcher Tabs -->
+      <nav class="flex items-center bg-[#230c0c] p-1 rounded-xl border border-red-900/50 overflow-x-auto max-w-full">
+        <button onclick="switchMainView('mobile')" id="tab-btn-mobile" class="view-tab-btn px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all whitespace-nowrap flex items-center gap-1.5 bg-cola-red text-white shadow">
+          <i class="fa-solid fa-mobile-screen-button"></i>
+          <span>1. 觀眾手機端</span>
+        </button>
+        <button onclick="switchMainView('screen')" id="tab-btn-screen" class="view-tab-btn px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all whitespace-nowrap flex items-center gap-1.5 text-red-200/70 hover:text-white">
+          <i class="fa-solid fa-tv"></i>
+          <span>2. 舞台大螢幕</span>
+        </button>
+        <button onclick="switchMainView('admin')" id="tab-btn-admin" class="view-tab-btn px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all whitespace-nowrap flex items-center gap-1.5 text-red-200/70 hover:text-white">
+          <i class="fa-solid fa-sliders"></i>
+          <span>3. 控台管理端</span>
+        </button>
+        <button onclick="switchMainView('code')" id="tab-btn-code" class="view-tab-btn px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all whitespace-nowrap flex items-center gap-1.5 text-red-200/70 hover:text-white">
+          <i class="fa-solid fa-code"></i>
+          <span>4. 部署與防灌票碼</span>
+        </button>
+      </nav>
+
+      <!-- Sound Effect Toggle & Live Timer Badge -->
+      <div class="flex items-center gap-2">
+        <div id="global-timer-badge" class="hidden items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-950/90 border border-red-500/40 text-xs font-mono font-bold text-red-300">
+          <i class="fa-regular fa-clock animate-pulse text-cola-gold"></i>
+          <span id="global-timer-text">03:00</span>
+        </div>
+        <button onclick="toggleSoundMute()" id="sound-toggle-btn" title="切換開罐氣泡音效" class="px-2.5 py-1.5 rounded-lg bg-[#260e0e] hover:bg-[#381414] border border-red-900/60 text-xs font-medium text-amber-200 flex items-center gap-1.5 transition">
+          <i id="sound-icon" class="fa-solid fa-volume-high text-cola-gold"></i>
+          <span class="hidden md:inline" id="sound-label">氣泡音效：開</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= MAIN CONTENT CONTAINER ================= -->
+  <main class="flex-1 relative z-10">
+
+    <!-- ===================================================================
+         VIEW 1: 📱 觀眾手機端 (Mobile Cola Vending Machine Voting UI)
+         =================================================================== -->
+    <section id="view-mobile" class="max-w-md mx-auto pb-52 pt-3 px-2.5 sm:px-4">
+      
+      <!-- Simulated LINE LIFF Auto-Bind Bar -->
+      <div class="bg-gradient-to-r from-[#0e2918] via-[#132a1c] to-[#1a1313] border border-[#06C755]/40 rounded-2xl p-2.5 mb-2.5 shadow-lg flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="relative shrink-0">
+            <div id="line-user-avatar" class="w-10 h-10 rounded-full bg-gradient-to-tr from-[#06C755] to-emerald-400 flex items-center justify-center text-white font-black text-base shadow-inner border-2 border-white/80">
+              怡
+            </div>
+            <span class="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-[#06C755] border border-black flex items-center justify-center text-[9px] text-white font-bold">L</span>
+          </div>
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5">
+              <span id="line-user-name" class="font-bold text-xs sm:text-sm text-white truncate">LINE 觀眾：小怡</span>
+              <span class="px-1.5 py-0.5 text-[10px] font-bold rounded bg-[#06C755]/25 text-[#4ade80] border border-[#06C755]/40 shrink-0">
+                已綁定領票
+              </span>
+            </div>
+            <p id="line-user-uid-text" class="text-[11px] text-emerald-200/70 truncate">
+              LIFF UID: U89a1...f3c • 配額：1金罐 + 4紅罐
+            </p>
+          </div>
+        </div>
+        <button onclick="openSwitchUserModal()" class="shrink-0 px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-[11px] font-bold text-emerald-200 border border-white/15 transition flex items-center gap-1">
+          <i class="fa-solid fa-repeat text-[10px]"></i>
+          <span>換人測試</span>
+        </button>
+      </div>
+
+      <!-- Dynamic Competition Stage Status Banner -->
+      <div id="mobile-stage-banner" class="rounded-2xl p-3 mb-3 border transition-all shadow-md bg-amber-950/40 border-amber-500/40">
+        <!-- Populated dynamically by JS -->
+      </div>
+
+      <!-- Submitted Receipt Card (Shown only after current LINE user has voted) -->
+      <div id="mobile-voted-receipt" class="hidden mb-4 rounded-3xl bg-gradient-to-b from-[#2a1111] to-[#170808] border-2 border-cola-gold/70 p-5 shadow-2xl text-center relative overflow-hidden">
+        <!-- Receipt content injected via JS -->
+      </div>
+
+      <!-- Vending Machine Interface (Hidden when current user already submitted, or toggleable) -->
+      <div id="vending-machine-container">
+        
+        <!-- Gold & Silver Cola Ticket Rules Summary Pill -->
+        <div class="grid grid-cols-2 gap-2 mb-3">
+          <div class="bg-gradient-to-br from-amber-950/70 to-stone-900/90 border border-amber-500/40 rounded-xl p-2 flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-b from-amber-300 to-amber-600 flex items-center justify-center text-stone-950 font-black text-sm shrink-0 shadow">
+              👑
+            </div>
+            <div class="leading-tight">
+              <div class="text-xs font-black text-amber-300">黃金特調罐 × 1</div>
+              <div class="text-[10px] text-amber-100/80">本命唯一 • <span class="text-amber-300 font-bold">+200cc 氣泡</span></div>
+            </div>
+          </div>
+          <div class="bg-gradient-to-br from-red-950/70 to-stone-900/90 border border-red-500/40 rounded-xl p-2 flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-b from-red-500 to-red-800 flex items-center justify-center text-white font-black text-sm shrink-0 shadow">
+              🥤
+            </div>
+            <div class="leading-tight">
+              <div class="text-xs font-black text-red-300">經典原味罐 × 4</div>
+              <div class="text-[10px] text-red-100/80">實力讚賞 • <span class="text-red-300 font-bold">各 +100cc 氣泡</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Search & Filter Bar -->
+        <div class="flex items-center gap-2 mb-3 sticky top-[53px] z-30 bg-[#140707]/95 py-1.5 backdrop-blur-md">
+          <div class="relative flex-1">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-red-300/50 text-xs"></i>
+            <input 
+              id="search-input" 
+              type="text" 
+              oninput="handleSearchAndFilter()"
+              placeholder="搜尋編號、選手姓名或歌名..." 
+              class="w-full pl-8 pr-7 py-2 rounded-xl bg-[#240d0d] border border-red-900/70 text-xs text-white placeholder-red-200/40 focus:outline-none focus:border-cola-gold transition"
+            />
+            <button id="clear-search-btn" onclick="clearSearchInput()" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-red-300/60 hover:text-white text-xs">
+              <i class="fa-solid fa-circle-xmark"></i>
+            </button>
+          </div>
+          <button 
+            id="filter-selected-btn" 
+            onclick="toggleFilterOnlySelected()" 
+            class="shrink-0 px-3 py-2 rounded-xl bg-[#240d0d] border border-red-900/70 text-xs font-bold text-red-200 hover:border-cola-gold transition flex items-center gap-1"
+          >
+            <i class="fa-solid fa-box-open text-cola-gold"></i>
+            <span id="filter-btn-label">已選 (0/5)</span>
+          </button>
+        </div>
+
+        <!-- Vending Machine Header Cabinet Sign -->
+        <div class="rounded-t-2xl bg-gradient-to-r from-[#7f1d1d] via-[#dc2626] to-[#7f1d1d] p-2 text-center border-t-2 border-x-2 border-red-400/40 shadow-inner flex items-center justify-between px-3">
+          <span class="text-[10px] font-mono uppercase tracking-widest text-red-100/90">● ICE COLD FIZZ</span>
+          <span class="text-xs font-black tracking-wider text-white drop-shadow">🥤 點擊可樂罐放入隨身冰桶</span>
+          <span id="vending-count-label" class="text-[10px] font-mono text-amber-200 font-bold">24 位選手</span>
+        </div>
+
+        <!-- 3-Column Vending Machine Rack Grid -->
+        <div class="bg-[#180808] border-x-2 border-b-2 border-red-950 rounded-b-2xl p-2 sm:p-3 shadow-2xl">
+          <div id="contestants-grid" class="grid grid-cols-3 gap-2 sm:gap-3">
+            <!-- Contestant Cola Can Cards injected by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= BOTTOM STICKY 5-SLOT ICE BUCKET DRAWER ================= -->
+      <div id="bottom-cooler-bar" class="fixed bottom-0 left-0 right-0 z-40 cooler-glass border-t-2 border-red-800/80 shadow-[0_-10px_30px_rgba(0,0,0,0.85)]">
+        <div class="max-w-md mx-auto px-3 pt-2 pb-3">
+          
+          <!-- Cooler Header & Swap Hint -->
+          <div class="flex items-center justify-between mb-1.5">
+            <div class="flex items-center gap-1.5">
+              <span class="text-xs font-black text-white flex items-center gap-1">
+                <span>🧊 我的 5 格隨身冰桶</span>
+                <span id="cooler-count-badge" class="px-1.5 py-0.2 rounded-full bg-red-900/80 text-amber-300 text-[10px] border border-amber-400/30">0 / 5 罐</span>
+              </span>
+            </div>
+            <span class="text-[10px] text-amber-300/90 font-medium flex items-center gap-1">
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+              <span>點紅罐可升為👑黃金罐</span>
+            </span>
+          </div>
+
+          <!-- 5 Horizontal Cooler Slots (Slot 1 = Gold, Slots 2-5 = Red) -->
+          <div id="cooler-slots-container" class="grid grid-cols-5 gap-1.5 mb-2.5">
+            <!-- Populated by JS -->
+          </div>
+
+          <!-- Two-Stage Anti-Fool Submit Button -->
+          <button 
+            id="mobile-submit-btn" 
+            onclick="handleOpenConfirmModal()"
+            class="w-full py-3 px-4 rounded-2xl font-black text-sm tracking-wide transition-all flex items-center justify-center gap-2 shadow-lg"
+          >
+            <!-- Dynamically updated by JS -->
+          </button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ===================================================================
+         VIEW 2: 📺 舞台大螢幕 (Stage Big Screen 16:9 Projector View)
+         =================================================================== -->
+    <section id="view-screen" class="hidden max-w-7xl mx-auto px-3 sm:px-6 py-4">
+      
+      <!-- Projector Top Bar -->
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-4 bg-[#1d0a0a]/90 border border-red-900/60 rounded-2xl p-3 sm:px-5 shadow-xl">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-cola-red to-amber-600 flex items-center justify-center shadow-lg shadow-red-600/30 border border-amber-300/50">
+            <i class="fa-solid fa-microphone-lines text-white text-xl"></i>
+          </div>
+          <div>
+            <h1 class="text-lg sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
+              <span>最佳人氣獎・即時可樂充氣榜</span>
+              <span id="screen-status-badge" class="text-xs px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/40 font-bold">
+                🧊 預選冰鎮階段
+              </span>
+            </h1>
+            <p class="text-xs text-red-200/70">每位觀眾擁有 1 罐黃金特調可樂 (+200cc) ＋ 4 罐經典紅罐可樂 (+100cc) • 總氣泡量最高者獲勝</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2.5">
+          <button onclick="quickToggleRevealFromScreen()" id="screen-quick-reveal-btn" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-300 text-xs font-bold transition flex items-center gap-1.5">
+            <i class="fa-solid fa-trophy"></i>
+            <span id="screen-quick-reveal-label">切換揭曉模式</span>
+          </button>
+          <button onclick="toggleFullScreen()" class="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-white text-xs font-bold transition flex items-center gap-1.5">
+            <i class="fa-solid fa-expand"></i>
+            <span>全螢幕投影</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Main 12-Column Stage Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+        
+        <!-- Left 4 Columns: LINE QR Code Scan Card + Live Total Crowd Fizz Tank -->
+        <div class="lg:col-span-4 flex flex-col gap-4">
+          
+          <!-- QR Code Call-To-Action Box (Real Scannable QR Code) -->
+          <div class="bg-gradient-to-b from-[#260d0d] to-[#170707] border-2 border-red-800/70 rounded-3xl p-5 text-center shadow-2xl relative overflow-hidden">
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#06C755]/20 border border-[#06C755]/40 text-[#4ade80] text-xs font-bold mb-2">
+              <i class="fa-brands fa-line text-sm"></i>
+              <span>LINE 掃描自動綁定領票（真實可掃描）</span>
+            </div>
+            <h2 id="screen-qr-title-display" class="text-lg font-black text-white mb-3">打開 LINE 掃描領取 5 罐人氣可樂</h2>
+            
+            <!-- Real Scannable Stage QR Code Container -->
+            <div class="w-48 h-48 mx-auto bg-white p-3 rounded-2xl shadow-[0_0_25px_rgba(230,29,43,0.45)] relative flex items-center justify-center mb-2">
+              <div id="stage-qrcode-canvas" class="w-full h-full flex items-center justify-center [&>img]:w-full [&>img]:h-full [&>canvas]:w-full [&>canvas]:h-full"></div>
+              <!-- Center Cola Badge (Sized to preserve QR H-level error correction) -->
+              <div class="absolute w-9 h-9 rounded-xl bg-cola-red border-2 border-white flex items-center justify-center shadow-md pointer-events-none">
+                <span class="text-base">🥤</span>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-center gap-2 mb-2">
+              <span id="screen-qr-url-preview" class="text-[11px] font-mono text-emerald-300/90 bg-black/40 px-2.5 py-0.5 rounded-full border border-emerald-500/30 truncate max-w-[230px]">
+                https://line.me
+              </span>
+              <button onclick="switchMainView('admin')" class="text-[11px] text-amber-300 hover:underline font-bold shrink-0">
+                <i class="fa-solid fa-pen-to-square"></i> 改網址
+              </button>
+            </div>
+
+            <div class="text-xs text-amber-200/90 font-medium mb-3">
+              免填個資・一人限領 5 罐・須投滿 5 位不同選手
+            </div>
+
+            <!-- Live Audience Participation Progress -->
+            <div class="bg-[#140606] rounded-2xl p-3 border border-red-900/60">
+              <div class="flex items-center justify-between text-xs mb-1.5">
+                <span class="text-red-200/80 font-bold">現場已開罐觀眾人數</span>
+                <span id="screen-voter-count" class="font-mono font-black text-sm text-cola-gold">0 / 100 人</span>
+              </div>
+              <div class="w-full h-3 bg-red-950 rounded-full overflow-hidden border border-red-800/40">
+                <div id="screen-voter-bar" class="h-full bg-gradient-to-r from-cola-red via-amber-500 to-cola-gold transition-all duration-500" style="width: 0%"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Giant Total Fizz Cola Tank -->
+          <div class="flex-1 bg-gradient-to-b from-[#240b0b] to-[#120505] border-2 border-red-900/70 rounded-3xl p-5 flex flex-col justify-between relative overflow-hidden shadow-2xl min-h-[210px]">
+            <!-- Liquid Level Background -->
+            <div id="screen-tank-liquid" class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#580b0e] via-[#991b1b]/70 to-[#f59e0b]/30 transition-all duration-700 pointer-events-none" style="height: 15%;">
+              <div class="w-full h-2 bg-amber-300/40 blur-[2px]"></div>
+            </div>
+
+            <div class="relative z-10 flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider text-amber-300/90 flex items-center gap-1.5">
+                <i class="fa-solid fa-fire-flame-curved"></i>
+                <span>TOTAL FIZZ ENERGY</span>
+              </span>
+              <span id="screen-total-cans-badge" class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-white/10 text-white">
+                累計 0 罐可樂
+              </span>
+            </div>
+
+            <div class="relative z-10 my-4 text-center">
+              <div class="text-xs text-red-200/80 mb-1">全場累計總充氣量</div>
+              <div class="font-display text-4xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-amber-200 to-cola-gold drop-shadow">
+                <span id="screen-total-cc">0</span>
+                <span class="text-xl sm:text-2xl text-amber-400">cc</span>
+              </div>
+            </div>
+
+            <div class="relative z-10 grid grid-cols-2 gap-2 text-center bg-black/45 backdrop-blur-sm rounded-xl p-2 border border-white/10">
+              <div>
+                <div class="text-[11px] text-amber-300 font-bold">👑 黃金特調罐</div>
+                <div id="screen-gold-cans-count" class="text-sm font-black text-white">0 罐</div>
+              </div>
+              <div class="border-l border-white/10">
+                <div class="text-[11px] text-red-300 font-bold">🥤 經典原味罐</div>
+                <div id="screen-red-cans-count" class="text-sm font-black text-white">0 罐</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Right 8 Columns: Either BLIND HYPE MODE or GRAND REVEAL MODE -->
+        <div class="lg:col-span-8 flex flex-col">
+          
+          <!-- MODE A: BLIND HYPE MODE (When revealWinner === false) -->
+          <div id="screen-blind-panel" class="flex-1 bg-gradient-to-b from-[#230c0c] to-[#130606] border-2 border-red-900/70 rounded-3xl p-5 sm:p-6 shadow-2xl flex flex-col justify-between">
+            <div>
+              <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                <div class="flex items-center gap-2">
+                  <span class="px-2.5 py-1 rounded-lg bg-cola-red text-white text-xs font-black tracking-wide animate-pulse">
+                    BLIND BOX LIVE
+                  </span>
+                  <h2 class="text-xl sm:text-2xl font-black text-white">盲盒搖晃催票榜（前 8 強神秘可樂罐）</h2>
+                </div>
+                <span class="text-xs text-amber-300/90 font-semibold">
+                  🔒 封盤前隱藏選手姓名，防止棄保效應！
+                </span>
+              </div>
+              <p class="text-xs text-red-200/70 mb-6">
+                以下為目前現場充氣量最高的前 8 名選手（隨機代號排序呈現），氣泡越滿代表得票越激烈！快打開手機為你喜愛的選手開罐充氣！
+              </p>
+
+              <!-- Top 8 Mystery Fizzing Cans Grid -->
+              <div id="mystery-cans-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <!-- Populated by JS -->
+              </div>
+            </div>
+
+            <!-- Bottom Stage Ticker -->
+            <div class="mt-6 bg-[#180707] border border-amber-500/30 rounded-2xl p-3.5 flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-2 text-xs sm:text-sm font-bold text-amber-200">
+                <i class="fa-solid fa-bullhorn text-cola-gold"></i>
+                <span id="screen-ticker-text">同分裁決規則：若總氣泡量 (cc) 相同，由獲得較多「👑 黃金特調罐」之選手勝出！</span>
+              </div>
+              <span class="text-xs font-mono text-red-300/70">即時同步連線中 ●</span>
+            </div>
+          </div>
+
+          <!-- MODE B: GRAND REVEAL MODE (When revealWinner === true) -->
+          <div id="screen-reveal-panel" class="hidden flex-1 bg-gradient-to-b from-[#2b1208] via-[#1c0a0a] to-[#120505] border-2 border-cola-gold rounded-3xl p-5 sm:p-6 shadow-[0_0_50px_rgba(251,191,36,0.25)] flex-col gap-5">
+            
+            <!-- Winner Spotlight Banner -->
+            <div id="winner-spotlight-card" class="rounded-2xl bg-gradient-to-r from-amber-950/90 via-[#3b1d06] to-amber-950/90 border-2 border-cola-gold p-5 relative overflow-hidden shadow-2xl">
+              <!-- Populated by JS -->
+            </div>
+
+            <!-- Full Contestant Ranking Bar List -->
+            <div class="flex-1 flex flex-col min-h-0">
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="text-sm sm:text-base font-black text-white flex items-center gap-2">
+                  <i class="fa-solid fa-ranking-star text-cola-gold"></i>
+                  <span>全場選手最終人氣氣泡總排行榜</span>
+                </h3>
+                <span class="text-xs text-amber-200/80">排序依據：總氣泡量 (cc) ➔ 👑 黃金罐數量</span>
+              </div>
+              <div id="full-ranking-list" class="space-y-2 max-h-[340px] overflow-y-auto pr-1">
+                <!-- Populated by JS -->
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         VIEW 3: 🎛️ 控台管理端 (Host & Staff Admin Panel)
+         =================================================================== -->
+    <section id="view-admin" class="hidden max-w-6xl mx-auto px-3 sm:px-6 py-5 space-y-6">
+      
+      <!-- NEW SECTION: 🔗 現場掃碼網址與真實 QR 碼設定 -->
+      <div class="bg-gradient-to-br from-[#240d0d] via-[#1c0909] to-[#140606] border-2 border-emerald-500/40 rounded-3xl p-5 shadow-2xl">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+          <div>
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#06C755]/20 text-[#4ade80] text-[11px] font-bold border border-[#06C755]/40 mb-1">
+              <i class="fa-solid fa-qrcode"></i> 手機相機與 LINE 皆可直接掃描
+            </span>
+            <h2 class="text-base sm:text-lg font-black text-white flex items-center gap-2">
+              <span>🔗 現場掃碼網址與真實 QR 碼產生器</span>
+            </h2>
+            <p class="text-xs text-red-200/75 mt-0.5">
+              輸入您部署後的網頁網址或 LINE LIFF 網址（如 <span class="font-mono text-amber-200">https://liff.line.me/xxxx</span>），右側與舞台大螢幕的 QR 碼會立即同步更新！您現在就可以拿手機相機掃描右側 QR 碼實測。
+            </p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
+          <!-- Left 8 Cols: URL & Title Inputs + Quick Presets -->
+          <div class="lg:col-span-8 space-y-3.5 bg-[#150606]/90 p-4 rounded-2xl border border-red-950">
+            <div>
+              <label class="block text-xs font-bold text-amber-300 mb-1.5">
+                1. 投票網頁網址 / LINE LIFF 專屬網址（觀眾掃碼後開啟的連結）：
+              </label>
+              <div class="flex flex-col sm:flex-row gap-2">
+                <input 
+                  id="admin-qr-url-input" 
+                  type="url" 
+                  oninput="handleQrConfigChange()"
+                  placeholder="例如：https://liff.line.me/1657000000-AbCdEfGh" 
+                  class="flex-1 px-3.5 py-2.5 rounded-xl bg-[#240d0d] border border-red-800/80 text-xs sm:text-sm font-mono text-emerald-300 focus:outline-none focus:border-[#06C755]"
+                />
+                <button onclick="handleQrConfigChange(true)" class="px-4 py-2.5 rounded-xl bg-[#06C755] hover:bg-emerald-500 text-stone-950 font-black text-xs transition shrink-0 flex items-center justify-center gap-1.5 shadow-lg">
+                  <i class="fa-solid fa-rotate"></i>
+                  <span>立即更新 QR 碼</span>
+                </button>
+              </div>
+              <!-- Quick Test URL Buttons -->
+              <div class="flex flex-wrap items-center gap-2 mt-2">
+                <span class="text-[11px] text-red-200/60">快速測試網址：</span>
+                <button onclick="applyQuickQrUrl('https://line.me')" class="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-[11px] font-bold text-emerald-300 border border-emerald-500/30 transition">
+                  套用 LINE 官方測試網址 (line.me)
+                </button>
+                <button onclick="applyQuickQrUrl(window.location.href)" class="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-[11px] font-bold text-amber-200 border border-amber-500/30 transition">
+                  套用目前網頁網址
+                </button>
+              </div>
+            </div>
+
+            <div class="pt-2 border-t border-red-950/80">
+              <label class="block text-xs font-bold text-amber-300 mb-1.5">
+                2. 舞台大螢幕 QR 碼上方催票標題：
+              </label>
+              <input 
+                id="admin-qr-title-input" 
+                type="text" 
+                oninput="handleQrConfigChange()"
+                placeholder="例如：打開 LINE 掃描領取 5 罐人氣可樂" 
+                class="w-full px-3.5 py-2 rounded-xl bg-[#240d0d] border border-red-900/70 text-xs sm:text-sm text-white focus:outline-none focus:border-cola-gold"
+              />
+            </div>
+          </div>
+
+          <!-- Right 4 Cols: Live Scannable QR Preview & Download Poster PNG -->
+          <div class="lg:col-span-4 flex flex-col items-center justify-center bg-[#180707] p-4 rounded-2xl border border-emerald-500/30 text-center">
+            <div class="text-[11px] font-bold text-emerald-300 mb-2 flex items-center gap-1">
+              <i class="fa-solid fa-camera"></i>
+              <span>現在即可拿手機掃描測試</span>
+            </div>
+            <div class="w-40 h-40 bg-white p-2.5 rounded-2xl shadow-xl relative flex items-center justify-center mb-3">
+              <div id="admin-qrcode-canvas" class="w-full h-full flex items-center justify-center [&>img]:w-full [&>img]:h-full [&>canvas]:w-full [&>canvas]:h-full"></div>
+              <div class="absolute w-8 h-8 rounded-lg bg-cola-red border-2 border-white flex items-center justify-center shadow pointer-events-none">
+                <span class="text-sm">🥤</span>
+              </div>
+            </div>
+            <button onclick="downloadQrCodeImage()" class="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:brightness-110 text-stone-950 font-black text-xs transition flex items-center justify-center gap-1.5 shadow-md">
+              <i class="fa-solid fa-download"></i>
+              <span>📥 下載 QR 碼圖片 (印海報/桌卡)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left 5 Cols: 3-Step Stage Controller + Crowd Simulator -->
+        <div class="lg:col-span-5 space-y-5">
+          
+          <!-- 3-Step Stage Status Switcher -->
+          <div class="bg-[#210b0b] border border-red-900/70 rounded-3xl p-5 shadow-xl">
+            <div class="flex items-center justify-between mb-3">
+              <h2 class="text-base font-black text-white flex items-center gap-2">
+                <i class="fa-solid fa-tower-broadcast text-cola-red"></i>
+                <span>現場投票三階段總控開關</span>
+              </h2>
+              <span class="text-[11px] px-2 py-0.5 rounded bg-red-950 text-red-300 border border-red-800/50">即時連動手機與大螢幕</span>
+            </div>
+
+            <div class="space-y-2.5">
+              <button onclick="setCompetitionPhase('PRE_SELECT')" id="admin-phase-btn-PRE_SELECT" class="w-full p-3.5 rounded-2xl border text-left transition flex items-start gap-3">
+                <div class="w-8 h-8 rounded-xl bg-sky-500/20 border border-sky-400/40 flex items-center justify-center text-sky-300 shrink-0 mt-0.5">
+                  1
+                </div>
+                <div>
+                  <div class="font-black text-sm text-white">🧊 階段一：預選冰鎮階段（比賽進行中）</div>
+                  <p class="text-xs text-red-200/70 mt-0.5">觀眾可邊聽歌邊將喜歡的選手放入冰桶（自動記憶），但「確認送出鈕」保持鎖定。</p>
+                </div>
+              </button>
+
+              <button onclick="setCompetitionPhase('VOTING_OPEN')" id="admin-phase-btn-VOTING_OPEN" class="w-full p-3.5 rounded-2xl border text-left transition flex items-start gap-3">
+                <div class="w-8 h-8 rounded-xl bg-red-500/20 border border-red-400/40 flex items-center justify-center text-red-300 shrink-0 mt-0.5">
+                  2
+                </div>
+                <div>
+                  <div class="font-black text-sm text-white">🔥 階段二：正式開放充氣投票（全體唱完後）</div>
+                  <p class="text-xs text-red-200/70 mt-0.5">一鍵解鎖全場觀眾手機的「開罐充氣送出鈕」，大螢幕進入盲盒搖晃催票模式。</p>
+                </div>
+              </button>
+
+              <button onclick="setCompetitionPhase('CLOSED')" id="admin-phase-btn-CLOSED" class="w-full p-3.5 rounded-2xl border text-left transition flex items-start gap-3">
+                <div class="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-300 shrink-0 mt-0.5">
+                  3
+                </div>
+                <div>
+                  <div class="font-black text-sm text-white">🏆 階段三：封盤截止 ＆ 大螢幕揭曉人氣王</div>
+                  <p class="text-xs text-red-200/70 mt-0.5">鎖定不再收票，並於舞台大螢幕揭曉「最佳人氣王」得主與完整氣泡排行榜！</p>
+                </div>
+              </button>
+            </div>
+
+            <!-- Countdown Timer Control -->
+            <div class="mt-4 pt-4 border-t border-red-900/50 flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <div class="text-xs font-bold text-amber-300">⏱️ 催票倒數計時器（選用）</div>
+                <div id="admin-timer-display" class="text-xl font-mono font-black text-white">03:00</div>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <button onclick="startCountdownTimer(180)" class="px-3 py-1.5 rounded-xl bg-cola-red hover:bg-red-600 text-white text-xs font-bold transition">
+                  開始 3 分鐘倒數
+        <!-- Right 7 Cols: Contestant Roster Manager (Live Edit Name, Song, Number & Bulk Paste) -->
+        <div class="lg:col-span-7 bg-[#210b0b] border border-red-900/70 rounded-3xl p-5 shadow-xl flex flex-col">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div>
+              <h2 class="text-base font-black text-white flex items-center gap-2">
+                <i class="fa-solid fa-microphone-lines text-cola-gold"></i>
+                <span>🎤 參賽者名單管理（即時修改姓名與歌名）</span>
+              </h2>
+              <p class="text-xs text-red-200/70 mt-0.5">直接點擊下方文字框修改編號、姓名或曲目，系統會自動儲存並即時同步至「觀眾手機販賣機」與「舞台大螢幕」！</p>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span id="admin-roster-count" class="px-3 py-1 rounded-full bg-red-950 text-amber-300 font-bold text-xs border border-amber-500/30">
+                目前 24 / 30 位
+              </span>
+            </div>
+          </div>
+
+          <!-- Action Toolbar: Toggle Bulk Import & Reset Sample Roster -->
+          <div class="flex flex-wrap items-center gap-2 mb-3">
+            <button onclick="toggleBulkImportPanel()" class="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-200 font-bold text-xs transition flex items-center gap-1.5">
+              <i class="fa-solid fa-paste"></i>
+              <span>📋 批次貼上名單 (支援 Excel / LINE 直接貼上)</span>
+            </button>
+            <button onclick="resetToSampleContestants(12)" class="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-red-200 font-bold text-xs transition flex items-center gap-1">
+              <i class="fa-solid fa-rotate-left"></i>
+              <span>載入 12 位精簡範例</span>
+            </button>
+            <button onclick="resetToSampleContestants(24)" class="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-red-200 font-bold text-xs transition flex items-center gap-1">
+              <i class="fa-solid fa-rotate"></i>
+              <span>恢復 24 位預設選手</span>
+            </button>
+          </div>
+
+          <!-- Collapsible Bulk Import Drawer -->
+          <div id="bulk-import-drawer" class="hidden mb-4 p-3.5 rounded-2xl bg-[#140606] border-2 border-amber-500/50 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-black text-amber-300">📋 批次貼上選手名單（一行一位選手，以空白、Tab 或逗號分隔）</span>
+              <button onclick="toggleBulkImportPanel()" class="text-red-300 hover:text-white text-xs">
+                <i class="fa-solid fa-xmark"></i> 收起
+              </button>
+            </div>
+            <p class="text-[11px] text-red-200/75">
+              格式範例：<code class="text-emerald-300 font-mono">01 王小明 告白氣球</code> 或直接填 <code class="text-emerald-300 font-mono">王小明 告白氣球</code>（系統會自動編號）：
+            </p>
+            <textarea 
+              id="bulk-import-textarea" 
+              rows="5" 
+              placeholder="01 王小明 告白氣球&#10;02 林小美 勇氣&#10;03 陳大天 演員&#10;04 張小華 稻香&#10;05 李小龍 雙截棍&#10;06 趙小雲 修煉愛情"
+              class="w-full p-3 rounded-xl bg-[#220c0c] border border-red-900/80 text-xs font-mono text-white focus:outline-none focus:border-cola-gold"
+            ></textarea>
+            <div class="flex flex-wrap items-center justify-end gap-2">
+              <button onclick="fillSampleBulkText()" class="px-3 py-1.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-bold transition mr-auto">
+                填入範例文字
+              </button>
+              <button onclick="processBulkContestants('APPEND')" class="px-3.5 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold transition">
+                <i class="fa-solid fa-plus"></i> 附加在現有名單後
+              </button>
+              <button onclick="processBulkContestants('REPLACE')" class="px-3.5 py-1.5 rounded-xl bg-cola-red hover:bg-red-600 text-white text-xs font-black transition shadow">
+                <i class="fa-solid fa-check-double"></i> 一鍵覆蓋全部名單
+              </button>
+            </div>
+          </div>
+
+          <!-- Add Single Contestant Form -->
+          <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 mb-3 bg-[#160707] p-3 rounded-2xl border border-red-950">
+            <input id="new-singer-name" type="text" placeholder="新增選手姓名 (例：王小明)" class="sm:col-span-5 px-3 py-2 rounded-xl bg-[#240d0d] border border-red-900/60 text-xs text-white focus:outline-none focus:border-cola-gold" />
+            <input id="new-singer-song" type="text" placeholder="演唱曲目 (例：告白氣球)" class="sm:col-span-5 px-3 py-2 rounded-xl bg-[#240d0d] border border-red-900/60 text-xs text-white focus:outline-none focus:border-cola-gold" />
+            <button onclick="addNewContestant()" class="sm:col-span-2 py-2 px-3 rounded-xl bg-cola-red hover:bg-red-600 text-white font-bold text-xs transition flex items-center justify-center gap-1">
+              <i class="fa-solid fa-plus"></i>
+              <span>+ 新增選手</span>
+            </button>
+          </div>
+
+          <!-- Column Headers for Live Editable Roster -->
+          <div class="grid grid-cols-12 gap-1.5 px-2.5 py-1 text-[11px] font-bold text-amber-300/80 border-b border-red-950 mb-1.5">
+            <div class="col-span-2">編號</div>
+            <div class="col-span-4">選手姓名 (點擊即改)</div>
+            <div class="col-span-4">演唱曲目 (點擊即改)</div>
+            <div class="col-span-2 text-right">得票 / 刪除</div>
+          </div>
+
+          <!-- Contestant Live Editable List -->
+          <div id="admin-contestant-list" class="flex-1 space-y-2 max-h-[430px] overflow-y-auto pr-1">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         VIEW 4: 💻 部署與防灌票代碼 (LINE LIFF + Firebase Security Rules)
+         =================================================================== -->
+    <section id="view-code" class="hidden max-w-5xl mx-auto px-3 sm:px-6 py-5 space-y-6">
+      
+      <div class="bg-gradient-to-r from-[#270e0e] to-[#1a0909] border border-amber-500/40 rounded-3xl p-5 shadow-xl">
+        <h2 class="text-lg sm:text-xl font-black text-white flex items-center gap-2 mb-2">
+          <i class="fa-solid fa-shield-halved text-cola-gold"></i>
+          <span>全場掃同一張 QR 碼（LINE LIFF 自動綁定 ＋ Firebase 1金4紅防灌票架構）</span>
+        </h2>
+        <p class="text-xs sm:text-sm text-red-100/80 leading-relaxed">
+          針對您設定的**「30 位選手以內、100 位觀眾以內、全場掃同一個 QR 碼自動綁定 LINE ID 領取 1 罐黃金可樂 (+200cc) 與 4 罐經典可樂 (+100cc)」**，下方為可直接複製貼上至 Firebase Realtime Database 的安全規則與前端串接碼。即使觀眾開啟無痕視窗或嘗試修改前端程式，也會被資料庫底層直接擋下。
+        </p>
+      </div>
+
+      <!-- Code Block 1: Firebase Security Rules -->
+      <div class="bg-[#180808] border border-red-900/70 rounded-3xl overflow-hidden shadow-xl">
+        <div class="bg-[#260e0e] px-4 py-3 border-b border-red-900/60 flex items-center justify-between">
+          <div>
+            <span class="text-xs font-mono font-bold text-cola-gold">1. database.rules.json</span>
+            <span class="text-xs text-red-200/70 ml-2">（強制 1金+4紅、5位選手絕對不重複、一人限投一次）</span>
+          </div>
+          <button onclick="copyCodeBlock('firebase-rules-code', this)" class="px-3 py-1.5 rounded-xl bg-cola-red hover:bg-red-600 text-white text-xs font-bold transition flex items-center gap-1.5">
+            <i class="fa-regular fa-copy"></i>
+            <span>複製安全規則</span>
+          </button>
+        </div>
+        <pre id="firebase-rules-code" class="p-4 text-xs font-mono text-emerald-300 overflow-x-auto leading-relaxed">{
+  "rules": {
+    "config": {
+      ".read": true,
+      ".write": "auth != null && auth.token.email === 'host@yourcontest.com'"
+    },
+    "candidates": {
+      ".read": true,
+      "$cid": {
+        "cc": {
+          // 僅允許在開放投票期間累加 +100cc (紅罐) 或 +200cc (黃金罐)
+          ".write": "auth != null && root.child('config/phase').val() === 'VOTING_OPEN'",
+          ".validate": "newData.val() === data.val() + 100 || newData.val() === data.val() + 200"
+        },
+        "goldCount": {
+          // 同分破局指標：每次僅能 +1
+          ".write": "auth != null && root.child('config/phase').val() === 'VOTING_OPEN'",
+          ".validate": "newData.val() === data.val() + 1"
+        },
+        "redCount": {
+          ".write": "auth != null && root.child('config/phase').val() === 'VOTING_OPEN'",
+          ".validate": "newData.val() === data.val() + 1"
+        }
+      }
+    },
+    "votes": {
+      "$lineUid": {
+        ".read": "auth != null",
+        // 1. 必須在開放投票階段 2. 該 LINE UID 先前未曾投過票 (!data.exists())
+        ".write": "auth != null && root.child('config/phase').val() === 'VOTING_OPEN' && !data.exists()",
+        "picks": {
+          // 驗證必含 1 張金票 (gold) 與 4 張依字母排序之紅票 (r1 < r2 < r3 < r4)
+          // 且 gold 絕對不等於 r1~r4 任一選手，100% 保證投滿 5 位不同選手！
+          ".validate": "newData.hasChildren(['gold', 'r1', 'r2', 'r3', 'r4']) &&
+            newData.child('r1').val() < newData.child('r2').val() &&
+            newData.child('r2').val() < newData.child('r3').val() &&
+            newData.child('r3').val() < newData.child('r4').val() &&
+            newData.child('gold').val() !== newData.child('r1').val() &&
+            newData.child('gold').val() !== newData.child('r2').val() &&
+            newData.child('gold').val() !== newData.child('r3').val() &&
+            newData.child('gold').val() !== newData.child('r4').val()"
+        }
+      }
+    }
+  }
+}</pre>
+      </div>
+
+      <!-- Code Block 2: LINE LIFF + Atomic Multi-path Submit -->
+      <div class="bg-[#180808] border border-red-900/70 rounded-3xl overflow-hidden shadow-xl">
+        <div class="bg-[#260e0e] px-4 py-3 border-b border-red-900/60 flex items-center justify-between">
+          <div>
+            <span class="text-xs font-mono font-bold text-cola-gold">2. liff-cola-vote.js</span>
+            <span class="text-xs text-red-200/70 ml-2">（LINE LIFF 自動讀取 userId ＋ 1金4紅原子化送票程式碼）</span>
+          </div>
+          <button onclick="copyCodeBlock('liff-client-code', this)" class="px-3 py-1.5 rounded-xl bg-cola-red hover:bg-red-600 text-white text-xs font-bold transition flex items-center gap-1.5">
+            <i class="fa-regular fa-copy"></i>
+            <span>複製前端串接碼</span>
+          </button>
+        </div>
+        <pre id="liff-client-code" class="p-4 text-xs font-mono text-sky-300 overflow-x-auto leading-relaxed">import liff from '@line/liff';
+import { getDatabase, ref, update, increment, serverTimestamp } from 'firebase/database';
+
+const db = getDatabase();
+
+// 1. 觀眾用 LINE 掃描全場共用 QR 碼後，自動無感取得唯一 LINE userId
+async function initLineLiff() {
+  await liff.init({ liffId: 'YOUR_LINE_LIFF_ID' });
+  if (!liff.isLoggedIn()) {
+    liff.login();
+    return;
+  }
+  const profile = await liff.getProfile();
+  window.currentLineUser = {
+    uid: profile.userId,         // 唯一識別碼，無痕視窗也無法偽造
+    name: profile.displayName,   // 觀眾 LINE 暱稱
+    avatar: profile.pictureUrl
+  };
+}
+
+// 2. 一次性送出「1罐黃金可樂(+200cc) + 4罐經典紅罐(+100cc)」
+async function submitColaBallot(lineUid, goldCandidateId, fourRedCandidateIds) {
+  if (!goldCandidateId || fourRedCandidateIds.length !== 4) return;
+
+  // 將 4 個紅罐選手編號依字母遞增排序，以通過 Firebase Security Rules 驗證
+  const sortedReds = [...fourRedCandidateIds].sort();
+  const updates = {};
+
+  // 寫入該 LINE 觀眾的選票明細
+  updates[`votes/${lineUid}`] = {
+    picks: {
+      gold: goldCandidateId,
+      r1: sortedReds[0],
+      r2: sortedReds[1],
+      r3: sortedReds[2],
+      r4: sortedReds[3]
+    },
+    timestamp: serverTimestamp()
+  };
+
+  // 為本命黃金罐選手原子累加 +200cc 及 1 罐金罐紀錄
+  updates[`candidates/${goldCandidateId}/cc`] = increment(200);
+  updates[`candidates/${goldCandidateId}/goldCount`] = increment(1);
+
+  // 為 4 位經典紅罐選手各原子累加 +100cc 及 1 罐紅罐紀錄
+  sortedReds.forEach((cid) => {
+    updates[`candidates/${cid}/cc`] = increment(100);
+    updates[`candidates/${cid}/redCount`] = increment(1);
+  });
+
+  // 單次請求原子化寫入，100人同時按下也絕不掉票！
+  await update(ref(db), updates);
+}</pre>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ================= CONFIRM SUBMIT MODAL (開罐充氣確認彈窗) ================= -->
+  <div id="confirm-submit-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+    <div class="w-full max-w-sm rounded-3xl bg-gradient-to-b from-[#2b0f0f] to-[#160707] border-2 border-cola-gold p-5 shadow-2xl animate-can-pop">
+      <div class="text-center mb-3">
+        <div class="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-cola-gold to-amber-600 flex items-center justify-center text-stone-950 text-2xl shadow-lg mb-2">
+          🥫
+        </div>
+        <h3 class="text-lg font-black text-white">準備開罐充氣送出！</h3>
+        <p class="text-xs text-amber-200/80 mt-0.5">拉開拉環送出後即無法更換選手，請確認您的 5 罐配置：</p>
+      </div>
+
+      <!-- Selected 1 Gold + 4 Red Summary List -->
+      <div id="modal-picks-list" class="space-y-2 my-4">
+        <!-- Populated by JS -->
+      </div>
+
+      <div class="grid grid-cols-2 gap-2.5 mt-4">
+        <button onclick="closeConfirmModal()" class="py-2.5 px-4 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold text-xs transition">
+          返回調整冰桶
+        </button>
+        <button onclick="executeFinalVoteSubmit()" class="py-2.5 px-4 rounded-xl bg-gradient-to-r from-cola-red via-red-500 to-amber-500 hover:brightness-110 text-white font-black text-xs shadow-lg shadow-red-600/40 transition flex items-center justify-center gap-1.5">
+          <span>啵！確認開罐</span>
+          <i class="fa-solid fa-bolt"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= SWITCH SIMULATED LINE USER MODAL ================= -->
+  <div id="switch-user-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+    <div class="w-full max-w-sm rounded-3xl bg-[#210b0b] border border-emerald-500/50 p-5 shadow-2xl">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-base font-black text-white flex items-center gap-2">
+          <i class="fa-brands fa-line text-[#06C755] text-lg"></i>
+          <span>切換測試觀眾 LINE 帳號</span>
+        </h3>
+        <button onclick="closeSwitchUserModal()" class="text-red-300/70 hover:text-white">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <p class="text-xs text-red-200/75 mb-3">
+        每個 LINE 帳號獨立擁有自己的隨身冰桶暫存與 5 罐選票配額。切換帳號即可測試不同觀眾的投票流程：
+      </p>
+      <div id="simulated-users-list" class="space-y-2 max-h-64 overflow-y-auto pr-1">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= APPLICATION JAVASCRIPT ================= -->
+  <script>
+    /*************************************************************************
+     * 1. WEB AUDIO SYNTHESIZER (Realistic Cola Can Pop, Fizz & Golden Chimes)
+     *************************************************************************/
+    const SoundEngine = {
+      ctx: null,
+      muted: false,
+
+      init() {
+        if (!this.ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) this.ctx = new AudioCtx();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      },
+
+      // Crisp metallic pull-tab "Pop! Tsst~" sound
+      playCanPop() {
+        if (this.muted) return;
+        try {
+          this.init();
+          const now = this.ctx.currentTime;
+
+          // 1. Metallic tab click
+          const osc = this.ctx.createOscillator();
+          const clickGain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(520, now);
+          osc.frequency.exponentialRampToValueAtTime(1180, now + 0.045);
+          clickGain.gain.setValueAtTime(0.28, now);
+          clickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+          osc.connect(clickGain);
+          clickGain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.065);
+
+          // 2. Short soda gas hiss (filtered white noise)
+          const bufferSize = this.ctx.sampleRate * 0.22;
+          const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+          const output = noiseBuffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) {
+            output[i] = Math.random() * 2 - 1;
+          }
+          const whiteNoise = this.ctx.createBufferSource();
+          whiteNoise.buffer = noiseBuffer;
+
+          const bandpass = this.ctx.createBiquadFilter();
+          bandpass.type = 'bandpass';
+          bandpass.frequency.setValueAtTime(4200, now + 0.04);
+
+          const hissGain = this.ctx.createGain();
+          hissGain.gain.setValueAtTime(0.01, now);
+          hissGain.gain.linearRampToValueAtTime(0.18, now + 0.05);
+          hissGain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+
+          whiteNoise.connect(bandpass);
+          bandpass.connect(hissGain);
+          hissGain.connect(this.ctx.destination);
+          whiteNoise.start(now + 0.035);
+          whiteNoise.stop(now + 0.25);
+        } catch (e) {}
+      },
+
+      // Sparkly Golden Cola promotion chime
+      playGoldSwap() {
+        if (this.muted) return;
+        try {
+          this.init();
+          const now = this.ctx.currentTime;
+          const notes = [587.33, 880, 1174.66, 1567.98]; // D5, A5, D6, G6
+          notes.forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.045);
+            gain.gain.setValueAtTime(0.16, now + idx * 0.045);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.045 + 0.28);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now + idx * 0.045);
+            osc.stop(now + idx * 0.045 + 0.3);
+          });
+        } catch (e) {}
+      },
+
+      // Soft unselect sound
+      playUnselect() {
+        if (this.muted) return;
+        try {
+          this.init();
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(360, now);
+          osc.frequency.exponentialRampToValueAtTime(180, now + 0.08);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.095);
+        } catch (e) {}
+      },
+
+      // Celebratory Soda Eruption + Chord on Final Submit
+      playSubmitEruption() {
+        if (this.muted) return;
+        try {
+          this.init();
+          const now = this.ctx.currentTime;
+
+          // Long fizzy pour sound
+          const bufferSize = this.ctx.sampleRate * 0.65;
+          const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+          const output = noiseBuffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) {
+            output[i] = Math.random() * 2 - 1;
+          }
+          const whiteNoise = this.ctx.createBufferSource();
+          whiteNoise.buffer = noiseBuffer;
+          const filter = this.ctx.createBiquadFilter();
+          filter.type = 'highpass';
+          filter.frequency.setValueAtTime(2800, now);
+          const noiseGain = this.ctx.createGain();
+          noiseGain.gain.setValueAtTime(0.22, now);
+          noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.62);
+          whiteNoise.connect(filter);
+          filter.connect(noiseGain);
+          noiseGain.connect(this.ctx.destination);
+          whiteNoise.start(now);
+
+          // Celebratory triad fanfare
+          const chord = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+          chord.forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.06);
+            gain.gain.setValueAtTime(0.2, now + idx * 0.06);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.75);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now + idx * 0.06);
+            osc.stop(now + 0.78);
+          });
+        } catch (e) {}
+      }
+    };
+
+    function toggleSoundMute() {
+      SoundEngine.muted = !SoundEngine.muted;
+      const icon = document.getElementById('sound-icon');
+      const label = document.getElementById('sound-label');
+      if (SoundEngine.muted) {
+        icon.className = 'fa-solid fa-volume-xmark text-red-400';
+        label.textContent = '氣泡音效：關';
+        showToast('🔇 已關閉開罐與氣泡音效', 'info');
+      } else {
+        icon.className = 'fa-solid fa-volume-high text-cola-gold';
+        label.textContent = '氣泡音效：開';
+        SoundEngine.playCanPop();
+        showToast('🔊 已開啟開罐氣泡音效！', 'gold');
+      }
+    }
+
+    /*************************************************************************
+     * 2. INITIAL STATE & DEMO CONTESTANTS (24 Contestants, Up to 30 Max)
+     *************************************************************************/
+    const STORAGE_KEY = 'COLA_VOTE_SYSTEM_STATE_V1';
+
+    const DEFAULT_CONTESTANTS = [
+      { id: 'c01', num: '01', name: '林宥嘉', song: '說謊', cc: 600, goldCount: 1, redCount: 4 },
+      { id: 'c02', num: '02', name: '徐佳瑩', song: '身騎白馬', cc: 900, goldCount: 2, redCount: 5 },
+      { id: 'c03', num: '03', name: '陳奕迅', song: '孤勇者', cc: 1100, goldCount: 3, redCount: 5 },
+      { id: 'c04', num: '04', name: '張惠妹', song: '連名帶姓', cc: 800, goldCount: 2, redCount: 4 },
+      { id: 'c05', num: '05', name: '周興哲', song: '以後別做朋友', cc: 700, goldCount: 1, redCount: 5 },
+      { id: 'c06', num: '06', name: '田馥甄', song: '小幸運', cc: 1200, goldCount: 4, redCount: 4 },
+      { id: 'c07', num: '07', name: '韋禮安', song: '如果可以', cc: 900, goldCount: 2, redCount: 5 },
+      { id: 'c08', num: '08', name: '鄧紫棋', song: '光年之外', cc: 1000, goldCount: 3, redCount: 4 },
+      { id: 'c09', num: '09', name: '蕭敬騰', song: '王妃', cc: 500, goldCount: 1, redCount: 3 },
+      { id: 'c10', num: '10', name: '蔡依林', song: '玫瑰少年', cc: 800, goldCount: 1, redCount: 6 },
+      { id: 'c11', num: '11', name: '盧廣仲', song: '刻在我心底的名字', cc: 700, goldCount: 2, redCount: 3 },
+      { id: 'c12', num: '12', name: 'A-Lin', song: '有一種悲傷', cc: 900, goldCount: 1, redCount: 7 },
+      { id: 'c13', num: '13', name: '林俊傑', song: '修煉愛情', cc: 1100, goldCount: 2, redCount: 7 },
+      { id: 'c14', num: '14', name: '孫盛希', song: '眼淚記得你', cc: 400, goldCount: 0, redCount: 4 },
+      { id: 'c15', num: '15', name: '高爾宣', song: 'Without You', cc: 600, goldCount: 1, redCount: 4 },
+      { id: 'c16', num: '16', name: '王心凌', song: '愛你', cc: 800, goldCount: 2, redCount: 4 },
+      { id: 'c17', num: '17', name: '告五人', song: '披星戴月的想你', cc: 1000, goldCount: 2, redCount: 6 },
+      { id: 'c18', num: '18', name: '戴愛玲', song: '對的人', cc: 500, goldCount: 1, redCount: 3 },
+      { id: 'c19', num: '19', name: '李聖傑', song: '手放開', cc: 600, goldCount: 0, redCount: 6 },
+      { id: 'c20', num: '20', name: '梁靜茹', song: '慢冷', cc: 700, goldCount: 1, redCount: 5 },
+      { id: 'c21', num: '21', name: '動力火車', song: '我很好騙', cc: 800, goldCount: 2, redCount: 4 },
+      { id: 'c22', num: '22', name: '艾怡良', song: 'Forever Young', cc: 400, goldCount: 0, redCount: 4 },
+      { id: 'c23', num: '23', name: '茄子蛋', song: '浪子回頭', cc: 500, goldCount: 1, redCount: 3 },
+      { id: 'c24', num: '24', name: '五月天阿信', song: '突然好想你', cc: 900, goldCount: 1, redCount: 7 }
+    ];
+
+    const SIMULATED_LINE_USERS = [
+      { uid: 'U89a1f3c_user1', name: 'LINE 觀眾：小怡', short: '怡', color: 'from-[#06C755] to-emerald-500' },
+      { uid: 'U72b9d1a_user2', name: 'LINE 觀眾：阿凱', short: '凱', color: 'from-sky-500 to-blue-600' },
+      { uid: 'U54c8e2b_user3', name: 'LINE 觀眾：雅婷', short: '婷', color: 'from-pink-500 to-rose-600' },
+      { uid: 'U31d4a9e_user4', name: 'LINE 觀眾：冠宇', short: '宇', color: 'from-amber-500 to-orange-600' },
+      { uid: 'U99f2c7d_user5', name: 'LINE 觀眾：佩珊', short: '珊', color: 'from-purple-500 to-indigo-600' }
+    ];
+
+    let appState = {
+      phase: 'VOTING_OPEN', // 'PRE_SELECT' | 'VOTING_OPEN' | 'CLOSED'
+      currentView: 'mobile', // 'mobile' | 'screen' | 'admin' | 'code'
+      currentLineUserIndex: 0,
+      filterOnlySelected: false,
+      searchQuery: '',
+      totalVotersCount: 32,
+      maxExpectedAudience: 100,
+      qrUrl: 'https://line.me',
+      qrTitle: '打開 LINE 掃描領取 5 罐人氣可樂',
+      candidates: JSON.parse(JSON.stringify(DEFAULT_CONTESTANTS)),
+      // Each LINE UID has a draft cooler: { gold: 'c06' | null, reds: ['c02', 'c03', ...] }
+      draftCoolers: {
+        'U89a1f3c_user1': { gold: 'c06', reds: ['c02', 'c03', 'c13'] },
+        'U72b9d1a_user2': { gold: null, reds: [] },
+        'U54c8e2b_user3': { gold: null, reds: [] },
+        'U31d4a9e_user4': { gold: null, reds: [] },
+        'U99f2c7d_user5': { gold: null, reds: [] }
+      },
+      // Submitted receipts keyed by LINE UID
+      submittedBallots: {}
+    };
+
+    // Countdown Timer state
+    let timerSeconds = 180;
+    let timerInterval = null;
+
+    function loadSavedState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && Array.isArray(parsed.candidates) && parsed.candidates.length > 0) {
+            appState = { ...appState, ...parsed };
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to load state from localStorage:', e);
+      }
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+      } catch (e) {}
+    }
+
+    function getCurrentUser() {
+      return SIMULATED_LINE_USERS[appState.currentLineUserIndex] || SIMULATED_LINE_USERS[0];
+    }
+
+    function getCurrentCooler() {
+      const uid = getCurrentUser().uid;
+      if (!appState.draftCoolers[uid]) {
+        appState.draftCoolers[uid] = { gold: null, reds: [] };
+      }
+      return appState.draftCoolers[uid];
+    }
+
+    function getCoolerTotalCount(cooler) {
+      return (cooler.gold ? 1 : 0) + cooler.reds.length;
+    }
+
+    /*************************************************************************
+     * 3. CUSTOM SVG COLA CAN GENERATOR (Unselected, Red +100cc, Gold +200cc)
+     *************************************************************************/
+    function renderColaCanCardHTML(candidate, selectionType) {
+      // selectionType: 'NONE' | 'RED' | 'GOLD'
+      const isGold = selectionType === 'GOLD';
+      const isRed = selectionType === 'RED';
+      const isSelected = isGold || isRed;
+
+      let canBodyClass = 'can-body-unselected';
+      let rimClass = 'can-rim-silver';
+      let cardBorderClass = 'border-red-950/90 hover:border-red-700/70';
+      let statusBadgeHTML = '';
+
+      if (isGold) {
+        canBodyClass = 'can-body-gold';
+        rimClass = 'can-rim-gold';
+        cardBorderClass = 'border-cola-gold ring-2 ring-cola-gold/60 bg-amber-950/30';
+        statusBadgeHTML = `
+          <div class="absolute -top-2 left-1/2 -translate-x-1/2 z-20 whitespace-nowrap px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-300 via-cola-gold to-amber-500 text-stone-950 font-black text-[10px] shadow-md flex items-center gap-0.5 border border-white">
+            <span>👑 本命 +200cc</span>
+          </div>
+        `;
+      } else if (isRed) {
+        canBodyClass = 'can-body-red';
+        rimClass = 'can-rim-silver';
+        cardBorderClass = 'border-red-500 ring-2 ring-red-500/50 bg-red-950/30';
+        statusBadgeHTML = `
+          <div class="absolute -top-2 left-1/2 -translate-x-1/2 z-20 whitespace-nowrap px-2 py-0.5 rounded-full bg-cola-red text-white font-black text-[10px] shadow-md flex items-center gap-0.5 border border-red-200">
+            <span>🥤 紅罐 +100cc</span>
+          </div>
+        `;
+      }
+
+      // Floating bubbles inside selected cards
+      const bubblesHTML = isSelected ? `
+        <span class="card-bubble w-2 h-2 ${isGold ? 'bg-amber-200' : 'bg-red-200/80'}" style="left: 18%; animation-delay: 0s;"></span>
+        <span class="card-bubble w-1.5 h-1.5 ${isGold ? 'bg-yellow-100' : 'bg-white/70'}" style="left: 52%; animation-delay: 0.7s;"></span>
+        <span class="card-bubble w-2.5 h-2.5 ${isGold ? 'bg-amber-300' : 'bg-red-300/70'}" style="left: 78%; animation-delay: 1.3s;"></span>
+      ` : '';
+
+      return `
+        <div 
+          id="can-card-${candidate.id}"
+          onclick="handleContestantCanClick('${candidate.id}')"
+          class="vending-slot relative rounded-2xl p-2 pt-3 border-2 ${cardBorderClass} transition-all duration-200 flex flex-col items-center justify-between cursor-pointer select-none active:scale-95 overflow-visible group"
+        >
+          ${statusBadgeHTML}
+          <div class="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
+            ${bubblesHTML}
+          </div>
+
+          <!-- THE METALLIC COLA CAN -->
+          <div class="w-full max-w-[92px] mx-auto flex flex-col items-center relative z-10">
+            <!-- Top Pull-Tab & Silver Rim -->
+            <div class="w-4/5 h-1.5 rounded-t-full ${rimClass} border-b border-black/30"></div>
+            <!-- Tapered Neck -->
+            <div class="w-11/12 h-2 ${canBodyClass} rounded-t-sm opacity-90"></div>
+            
+            <!-- Main Cylindrical Can Body -->
+            <div class="w-full rounded-md ${canBodyClass} px-1.5 py-2.5 flex flex-col items-center justify-center text-center relative overflow-hidden border-y border-white/20 min-h-[96px]">
+              
+              <!-- Classic Dynamic Cola Ribbon Wave SVG -->
+              <svg viewBox="0 0 100 24" class="absolute inset-x-0 top-1 w-full h-5 opacity-25 pointer-events-none" preserveAspectRatio="none">
+                <path d="M0,16 C30,2 65,28 100,8 L100,20 C65,34 30,8 0,22 Z" fill="#ffffff"/>
+              </svg>
+
+              <!-- Contestant Number Pill -->
+              <span class="px-1.5 py-0.2 rounded text-[10px] font-mono font-black tracking-tighter mb-0.5 ${isGold ? 'bg-stone-950/80 text-amber-300 border border-amber-300/40' : 'bg-black/45 text-white/95'}">
+                #${candidate.num}
+              </span>
+
+              <!-- Contestant Name (Cola Name Bottle Style) -->
+              <div class="font-black text-xs sm:text-sm leading-tight line-clamp-1 ${isGold ? 'text-stone-950 drop-shadow-[0_1px_0_rgba(255,255,255,0.6)]' : 'text-white drop-shadow'}">
+                ${escapeHtml(candidate.name)}
+              </div>
+
+              <!-- Song Title -->
+              <div class="text-[10px] leading-tight line-clamp-1 mt-0.5 px-1 font-medium ${isGold ? 'text-stone-900 font-bold' : 'text-red-100/85'}">
+                《${escapeHtml(candidate.song)}》
+              </div>
+
+              <!-- Bottom CC Label on Can -->
+              <div class="mt-1 text-[9px] font-mono tracking-tighter uppercase ${isGold ? 'text-stone-950 font-black' : 'text-white/60'}">
+                ${isGold ? '★ 200CC GOLD ★' : isRed ? '● 100CC CLASSIC ●' : 'POPULARITY FIZZ'}
+              </div>
+            </div>
+
+            <!-- Bottom Taper & Base Rim -->
+            <div class="w-11/12 h-1.5 ${canBodyClass} rounded-b-sm opacity-90"></div>
+            <div class="w-4/5 h-1.5 rounded-b-full ${rimClass}"></div>
+          </div>
+
+          <!-- Action Sub-button Inside Vending Slot -->
+          <div class="w-full mt-2 relative z-10">
+            ${isGold ? `
+              <div class="w-full py-1 rounded-lg bg-amber-400/20 border border-amber-400/50 text-amber-300 text-[10px] font-black text-center">
+                👑 已設為本命
+              </div>
+            ` : isRed ? `
+              <button 
+                onclick="event.stopPropagation(); promoteRedToGold('${candidate.id}')"
+                class="w-full py-1 rounded-lg bg-gradient-to-r from-amber-500/30 to-yellow-500/30 hover:from-amber-400 hover:to-yellow-500 hover:text-stone-950 border border-amber-400/70 text-amber-200 text-[10px] font-black transition flex items-center justify-center gap-0.5 shadow"
+              >
+                <span>👑 換成金罐</span>
+              </button>
+            ` : `
+              <div class="w-full py-1 rounded-lg bg-white/5 group-hover:bg-white/10 text-red-200/60 text-[10px] font-bold text-center transition">
+                + 放入冰桶
+              </div>
+            `}
+          </div>
+        </div>
+      `;
+    }
+
+    /*************************************************************************
+     * 4. VENDING MACHINE & 5-SLOT COOLER INTERACTION LOGIC
+     *************************************************************************/
+    function handleContestantCanClick(candidateId) {
+      const uid = getCurrentUser().uid;
+      if (appState.submittedBallots[uid]) {
+        showToast('您已經完成開罐投票囉！如需測試可點右上角「換人測試」', 'info');
+        return;
+      }
+      if (appState.phase === 'CLOSED') {
+        showToast('本場投票已經截止囉！請看舞台大螢幕揭曉結果', 'warn');
+        return;
+      }
+
+      const cooler = getCurrentCooler();
+
+      // Case 1: Already in Gold slot -> Remove from Gold slot
+      if (cooler.gold === candidateId) {
+        cooler.gold = null;
+        SoundEngine.playUnselect();
+        saveState();
+        renderMobileView();
+        return;
+      }
+
+      // Case 2: Already in Red slots -> Remove from Red slots
+      const redIdx = cooler.reds.indexOf(candidateId);
+      if (redIdx !== -1) {
+        cooler.reds.splice(redIdx, 1);
+        SoundEngine.playUnselect();
+        saveState();
+        renderMobileView();
+        return;
+      }
+
+      // Case 3: Unselected -> Check if 5 slots are already full
+      const totalSelected = getCoolerTotalCount(cooler);
+      if (totalSelected >= 5) {
+        showToast('🧊 隨身冰桶已滿 5 罐！請先點擊已選選手取消，再放入新選手。', 'warn');
+        return;
+      }
+
+      // Add to Gold if Gold slot is empty, otherwise add to Red slot
+      if (!cooler.gold) {
+        cooler.gold = candidateId;
+        SoundEngine.playGoldSwap();
+        const c = appState.candidates.find(x => x.id === candidateId);
+        if (c) showToast(`👑 已將 #${c.num} ${c.name} 放入「黃金特調罐 (+200cc)」！`, 'gold');
+      } else {
+        cooler.reds.push(candidateId);
+        SoundEngine.playCanPop();
+      }
+
+      saveState();
+      renderMobileView();
+
+      // Trigger pop animation on the card
+      requestAnimationFrame(() => {
+        const cardEl = document.getElementById(`can-card-${candidateId}`);
+        if (cardEl) {
+          cardEl.classList.remove('animate-can-pop');
+          void cardEl.offsetWidth;
+          cardEl.classList.add('animate-can-pop');
+        }
+      });
+    }
+
+    // One-tap swap between any Red Can and the Golden Special Can
+    function promoteRedToGold(candidateId) {
+      const uid = getCurrentUser().uid;
+      if (appState.submittedBallots[uid] || appState.phase === 'CLOSED') return;
+
+      const cooler = getCurrentCooler();
+      const redIdx = cooler.reds.indexOf(candidateId);
+      if (redIdx === -1) return;
+
+      const oldGold = cooler.gold;
+      cooler.gold = candidateId;
+      if (oldGold) {
+        cooler.reds[redIdx] = oldGold;
+      } else {
+        cooler.reds.splice(redIdx, 1);
+      }
+
+      SoundEngine.playGoldSwap();
+      const c = appState.candidates.find(x => x.id === candidateId);
+      if (c) {
+        showToast(`👑 已將本命黃金可樂 (+200cc) 換給 #${c.num} ${c.name}！`, 'gold');
+      }
+
+      saveState();
+      renderMobileView();
+    }
+
+    function removeSlotFromCooler(candidateId) {
+      handleContestantCanClick(candidateId);
+    }
+
+    /*************************************************************************
+     * 5. RENDER MOBILE VIEW (Header, Grid, 5-Slot Cooler, Receipt)
+     *************************************************************************/
+    function renderMobileView() {
+      const user = getCurrentUser();
+      const cooler = getCurrentCooler();
+      const submittedBallot = appState.submittedBallots[user.uid];
+
+      // 1. Update LINE Header
+      const avatarEl = document.getElementById('line-user-avatar');
+      avatarEl.textContent = user.short;
+      avatarEl.className = `w-10 h-10 rounded-full bg-gradient-to-tr ${user.color} flex items-center justify-center text-white font-black text-base shadow-inner border-2 border-white/80`;
+      document.getElementById('line-user-name').textContent = user.name;
+      document.getElementById('line-user-uid-text').textContent = submittedBallot
+        ? `LIFF UID: ${user.uid.slice(0, 8)}... • ✅ 已完成開罐充氣投票`
+        : `LIFF UID: ${user.uid.slice(0, 8)}... • 配額：1金罐(+200cc) + 4紅罐(+100cc)`;
+
+      // 2. Update Stage Banner
+      const bannerEl = document.getElementById('mobile-stage-banner');
+      if (appState.phase === 'PRE_SELECT') {
+        bannerEl.className = 'rounded-2xl p-3 mb-3 border transition-all shadow-md bg-sky-950/50 border-sky-400/40';
+        bannerEl.innerHTML = `
+          <div class="flex items-start gap-2.5">
+            <span class="text-lg">🧊</span>
+            <div class="text-xs leading-relaxed">
+              <div class="font-black text-sky-300">目前為【預選冰鎮階段】（送出鈕尚未解鎖）</div>
+              <p class="text-sky-100/80 mt-0.5">您可以邊聽歌邊把喜歡的選手放進下方隨身冰桶（系統會自動記憶在手機裡），等最後一位選手唱完後，主持人將統一解鎖送出鈕！</p>
+            </div>
+          </div>
+        `;
+      } else if (appState.phase === 'VOTING_OPEN') {
+        bannerEl.className = 'rounded-2xl p-3 mb-3 border transition-all shadow-md bg-gradient-to-r from-red-950/80 via-amber-950/60 to-red-950/80 border-cola-gold/70';
+        bannerEl.innerHTML = `
+          <div class="flex items-start gap-2.5">
+            <span class="text-lg animate-bounce">🔥</span>
+            <div class="text-xs leading-relaxed">
+              <div class="font-black text-amber-300">【正式開放充氣投票中！】請確認選滿 5 罐不同選手</div>
+              <p class="text-amber-100/85 mt-0.5">請確認下方冰桶已選滿 <span class="font-bold text-white">1 罐黃金可樂 + 4 罐經典可樂</span>，即可按下底部「確認開罐充氣」送出選票！</p>
+            </div>
+          </div>
+        `;
+      } else {
+        bannerEl.className = 'rounded-2xl p-3 mb-3 border transition-all shadow-md bg-amber-950/60 border-amber-400/60';
+        bannerEl.innerHTML = `
+          <div class="flex items-start gap-2.5">
+            <span class="text-lg">🏆</span>
+            <div class="text-xs leading-relaxed">
+              <div class="font-black text-amber-300">本場人氣投票已封盤截止！</div>
+              <p class="text-amber-100/80 mt-0.5">請抬頭觀看舞台大螢幕（或點擊上方「2. 舞台大螢幕」分頁）揭曉最佳人氣獎得主！</p>
+            </div>
+          </div>
+        `;
+      }
+
+      // 3. Check if Current LINE User has already voted -> Show Digital Cola Receipt
+      const receiptEl = document.getElementById('mobile-voted-receipt');
+      const vendingEl = document.getElementById('vending-machine-container');
+      const coolerBarEl = document.getElementById('bottom-cooler-bar');
+
+      if (submittedBallot) {
+        receiptEl.classList.remove('hidden');
+        vendingEl.classList.add('hidden');
+        coolerBarEl.classList.add('hidden');
+
+        const goldSinger = appState.candidates.find(c => c.id === submittedBallot.gold);
+        const redSingers = submittedBallot.reds.map(rid => appState.candidates.find(c => c.id === rid)).filter(Boolean);
+
+        receiptEl.innerHTML = `
+          <div class="w-14 h-14 mx-auto rounded-full bg-gradient-to-br from-cola-gold to-amber-600 flex items-center justify-center text-stone-950 text-2xl shadow-lg mb-2 border-2 border-white">
+            <i class="fa-solid fa-check"></i>
+          </div>
+          <div class="inline-block px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold mb-1">
+            LINE ID 已核銷 • 總計灌入 +600cc 人氣氣泡
+          </div>
+          <h3 class="text-lg font-black text-white mb-1">啵！您已完成開罐充氣投票</h3>
+          <p class="text-xs text-red-200/75 mb-4">感謝您的參與！以下為您的數位人氣可樂存根聯：</p>
+
+          <div class="text-left space-y-2 bg-black/40 p-3.5 rounded-2xl border border-amber-500/30 mb-4">
+            ${goldSinger ? `
+              <div class="flex items-center justify-between p-2.5 rounded-xl bg-gradient-to-r from-amber-500/25 to-amber-900/20 border border-cola-gold/60">
+                <div class="flex items-center gap-2">
+                  <span class="text-base">👑</span>
+                  <div>
+                    <div class="text-xs font-black text-amber-300">#${goldSinger.num} ${escapeHtml(goldSinger.name)}</div>
+                    <div class="text-[10px] text-amber-100/75">《${escapeHtml(goldSinger.song)}》</div>
+                  </div>
+                </div>
+                <span class="px-2 py-0.5 rounded-lg bg-cola-gold text-stone-950 font-black text-xs">+200cc</span>
+              </div>
+            ` : ''}
+
+            <div class="grid grid-cols-2 gap-2 pt-1">
+              ${redSingers.map(rs => `
+                <div class="p-2 rounded-xl bg-red-950/50 border border-red-800/50 flex items-center justify-between">
+                  <div class="min-w-0 pr-1">
+                    <div class="text-xs font-bold text-white truncate">#${rs.num} ${escapeHtml(rs.name)}</div>
+                    <div class="text-[10px] text-red-200/70 truncate">《${escapeHtml(rs.song)}》</div>
+                  </div>
+                  <span class="shrink-0 text-[10px] font-black text-red-300 bg-red-900/60 px-1.5 py-0.5 rounded">+100cc</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-2">
+            <button onclick="switchMainView('screen')" class="flex-1 py-2.5 px-4 rounded-xl bg-cola-red hover:bg-red-600 text-white font-bold text-xs transition flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-tv"></i>
+              <span>前往舞台大螢幕看即時氣泡</span>
+            </button>
+            <button onclick="openSwitchUserModal()" class="py-2.5 px-4 rounded-xl bg-white/10 hover:bg-white/15 text-amber-200 font-bold text-xs transition flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-user-plus"></i>
+              <span>切換另一位觀眾測試</span>
+            </button>
+          </div>
+        `;
+        return;
+      } else {
+        receiptEl.classList.add('hidden');
+        vendingEl.classList.remove('hidden');
+        coolerBarEl.classList.remove('hidden');
+      }
+
+      // 4. Filter & Render 3-Column Vending Machine Contestant Grid
+      const totalSelected = getCoolerTotalCount(cooler);
+      const filterBtn = document.getElementById('filter-selected-btn');
+      const filterLabel = document.getElementById('filter-btn-label');
+      filterLabel.textContent = appState.filterOnlySelected ? `顯示全部` : `已選 (${totalSelected}/5)`;
+      if (appState.filterOnlySelected) {
+        filterBtn.className = 'shrink-0 px-3 py-2 rounded-xl bg-cola-gold text-stone-950 font-black text-xs transition flex items-center gap-1 shadow';
+      } else {
+        filterBtn.className = 'shrink-0 px-3 py-2 rounded-xl bg-[#240d0d] border border-red-900/70 text-xs font-bold text-red-200 hover:border-cola-gold transition flex items-center gap-1';
+      }
+
+      const q = appState.searchQuery.trim().toLowerCase();
+      const filteredCandidates = appState.candidates.filter(c => {
+        const inCooler = cooler.gold === c.id || cooler.reds.includes(c.id);
+        if (appState.filterOnlySelected && !inCooler) return false;
+        if (!q) return true;
+        return c.num.toLowerCase().includes(q) || c.name.toLowerCase().includes(q) || c.song.toLowerCase().includes(q);
+      });
+
+      document.getElementById('vending-count-label').textContent = `顯示 ${filteredCandidates.length} / ${appState.candidates.length} 位`;
+
+      const gridEl = document.getElementById('contestants-grid');
+      if (filteredCandidates.length === 0) {
+        gridEl.innerHTML = `
+          <div class="col-span-3 py-10 text-center text-red-300/60 text-xs">
+            <i class="fa-solid fa-box-open text-2xl mb-2 block text-red-400/50"></i>
+            找不到符合條件的選手可樂罐
+          </div>
+        `;
+      } else {
+        gridEl.innerHTML = filteredCandidates.map(c => {
+          let selType = 'NONE';
+          if (cooler.gold === c.id) selType = 'GOLD';
+          else if (cooler.reds.includes(c.id)) selType = 'RED';
+          return renderColaCanCardHTML(c, selType);
+        }).join('');
+      }
+
+      // 5. Render Bottom Sticky 5-Slot Cooler
+      document.getElementById('cooler-count-badge').textContent = `${totalSelected} / 5 罐`;
+      const slotsContainer = document.getElementById('cooler-slots-container');
+
+      // Slot 1: Gold Slot
+      const goldCandidate = cooler.gold ? appState.candidates.find(c => c.id === cooler.gold) : null;
+      let slotsHTML = '';
+
+      if (goldCandidate) {
+        slotsHTML += `
+          <div onclick="removeSlotFromCooler('${goldCandidate.id}')" class="relative rounded-xl p-1.5 bg-gradient-to-b from-amber-400/30 to-amber-900/50 border-2 border-cola-gold cursor-pointer flex flex-col justify-between min-h-[58px] shadow-md group">
+            <div class="flex items-center justify-between">
+              <span class="text-[9px] font-black px-1 rounded bg-cola-gold text-stone-950">👑+200</span>
+              <i class="fa-solid fa-xmark text-[10px] text-amber-200/70 group-hover:text-white"></i>
+            </div>
+            <div class="text-center my-0.5">
+              <div class="text-[10px] font-mono font-bold text-amber-300">#${goldCandidate.num}</div>
+              <div class="text-[11px] font-black text-white truncate">${escapeHtml(goldCandidate.name)}</div>
+            </div>
+          </div>
+        `;
+      } else {
+        slotsHTML += `
+          <div class="rounded-xl p-1.5 bg-amber-950/20 border-2 border-dashed border-amber-500/40 flex flex-col items-center justify-center min-h-[58px] text-center">
+            <span class="text-xs">👑</span>
+            <span class="text-[9px] font-bold text-amber-300/70 leading-tight mt-0.5">黃金特調<br>+200cc</span>
+          </div>
+        `;
+      }
+
+      // Slots 2-5: 4 Classic Red Slots (Tapping promotes to Gold!)
+      for (let i = 0; i < 4; i++) {
+        const redCid = cooler.reds[i];
+        const redCandidate = redCid ? appState.candidates.find(c => c.id === redCid) : null;
+        if (redCandidate) {
+          slotsHTML += `
+            <div onclick="promoteRedToGold('${redCandidate.id}')" title="點擊升為黃金可樂" class="relative rounded-xl p-1.5 bg-gradient-to-b from-red-600/30 to-red-950/70 border border-red-500 cursor-pointer flex flex-col justify-between min-h-[58px] hover:border-cola-gold transition group">
+              <div class="flex items-center justify-between">
+                <span class="text-[9px] font-bold text-red-200">🥤+100</span>
+                <button onclick="event.stopPropagation(); removeSlotFromCooler('${redCandidate.id}')" class="w-4 h-4 rounded-full bg-black/40 hover:bg-red-600 flex items-center justify-center text-[9px] text-red-200">
+                  <i class="fa-solid fa-xmark"></i>
+                </button>
+              </div>
+              <div class="text-center my-0.5">
+                <div class="text-[10px] font-mono text-red-300">#${redCandidate.num}</div>
+                <div class="text-[11px] font-bold text-white truncate">${escapeHtml(redCandidate.name)}</div>
+              </div>
+            </div>
+          `;
+        } else {
+          slotsHTML += `
+            <div class="rounded-xl p-1.5 bg-red-950/15 border border-dashed border-red-800/50 flex flex-col items-center justify-center min-h-[58px] text-center">
+              <span class="text-xs opacity-40">🥤</span>
+              <span class="text-[9px] text-red-300/40 leading-tight mt-0.5">經典紅罐<br>+100cc</span>
+            </div>
+          `;
+        }
+      }
+
+      slotsContainer.innerHTML = slotsHTML;
+
+      // 6. Update Two-Stage Anti-Fool Submit Button
+      const submitBtn = document.getElementById('mobile-submit-btn');
+      if (appState.phase === 'PRE_SELECT') {
+        submitBtn.disabled = true;
+        submitBtn.className = 'w-full py-3 px-4 rounded-2xl font-bold text-xs sm:text-sm bg-stone-800 text-sky-300/90 border border-sky-500/30 cursor-not-allowed flex items-center justify-center gap-2';
+        submitBtn.innerHTML = `<i class="fa-solid fa-lock"></i> <span>已冰鎮 ${totalSelected}/5 罐（等待主持人開放開罐送出）</span>`;
+      } else if (appState.phase === 'CLOSED') {
+        submitBtn.disabled = true;
+        submitBtn.className = 'w-full py-3 px-4 rounded-2xl font-bold text-xs sm:text-sm bg-stone-800 text-amber-300/80 border border-amber-500/30 cursor-not-allowed flex items-center justify-center gap-2';
+        submitBtn.innerHTML = `<i class="fa-solid fa-flag-checkered"></i> <span>投票已截止，請看舞台大螢幕揭曉</span>`;
+      } else {
+        // VOTING_OPEN
+        if (totalSelected < 5 || !cooler.gold || cooler.reds.length < 4) {
+          const remaining = 5 - totalSelected;
+          submitBtn.disabled = true;
+          submitBtn.className = 'w-full py-3 px-4 rounded-2xl font-bold text-xs sm:text-sm bg-[#2c1212] text-red-300/80 border border-red-800/60 cursor-not-allowed flex items-center justify-center gap-2';
+          submitBtn.innerHTML = `<i class="fa-solid fa-circle-exclamation text-amber-400"></i> <span>還差 ${remaining} 罐才能送出（須選滿 5 位不同選手）</span>`;
+        } else {
+          submitBtn.disabled = false;
+          submitBtn.className = 'w-full py-3 px-4 rounded-2xl font-black text-sm bg-gradient-to-r from-cola-red via-red-500 to-amber-500 hover:brightness-110 active:scale-98 text-white shadow-[0_0_25px_rgba(230,29,43,0.65)] border border-amber-300/60 cursor-pointer flex items-center justify-center gap-2 animate-pulse';
+          submitBtn.innerHTML = `<i class="fa-solid fa-bolt"></i> <span>確認開罐充氣！（送出 1 金 4 紅共 5 罐）</span>`;
+        }
+      }
+    }
+
+    /*************************************************************************
+     * 6. CONFIRMATION MODAL & ATOMIC BALLOT SUBMISSION
+     *************************************************************************/
+    function handleOpenConfirmModal() {
+      const cooler = getCurrentCooler();
+      if (appState.phase !== 'VOTING_OPEN') return;
+      if (!cooler.gold || cooler.reds.length !== 4) return;
+
+      const goldSinger = appState.candidates.find(c => c.id === cooler.gold);
+      const redSingers = cooler.reds.map(id => appState.candidates.find(c => c.id === id)).filter(Boolean);
+
+      const modalList = document.getElementById('modal-picks-list');
+      modalList.innerHTML = `
+        <div class="p-3 rounded-2xl bg-gradient-to-r from-amber-500/25 to-amber-900/30 border-2 border-cola-gold flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <span class="text-xl">👑</span>
+            <div>
+              <div class="text-[10px] font-bold text-amber-300">本命黃金特調可樂</div>
+              <div class="text-sm font-black text-white">#${goldSinger.num} ${escapeHtml(goldSinger.name)} —《${escapeHtml(goldSinger.song)}》</div>
+            </div>
+          </div>
+          <span class="px-2 py-1 rounded-lg bg-cola-gold text-stone-950 font-black text-xs shrink-0">+200cc</span>
+        </div>
+        <div class="space-y-1.5 pt-1">
+          ${redSingers.map(rs => `
+            <div class="px-3 py-2 rounded-xl bg-red-950/60 border border-red-800/60 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span>🥤</span>
+                <span class="text-xs font-bold text-white">#${rs.num} ${escapeHtml(rs.name)}</span>
+                <span class="text-[11px] text-red-200/70">《${escapeHtml(rs.song)}》</span>
+              </div>
+              <span class="text-xs font-black text-red-300">+100cc</span>
+            </div>
+          `).join('')}
+        </div>
+      `;
+
+      const modal = document.getElementById('confirm-submit-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeConfirmModal() {
+      const modal = document.getElementById('confirm-submit-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function executeFinalVoteSubmit() {
+      const user = getCurrentUser();
+      const cooler = getCurrentCooler();
+      if (!cooler.gold || cooler.reds.length !== 4) return;
+
+      // Increment candidate scores (+200cc for Gold, +100cc for each of 4 Reds)
+      const goldTarget = appState.candidates.find(c => c.id === cooler.gold);
+      if (goldTarget) {
+        goldTarget.cc += 200;
+        goldTarget.goldCount += 1;
+      }
+
+      cooler.reds.forEach(rid => {
+        const redTarget = appState.candidates.find(c => c.id === rid);
+        if (redTarget) {
+          redTarget.cc += 100;
+          redTarget.redCount += 1;
+        }
+      });
+
+      // Record immutable ballot for this LINE UID
+      appState.submittedBallots[user.uid] = {
+        gold: cooler.gold,
+        reds: [...cooler.reds],
+        timestamp: Date.now()
+      };
+      appState.totalVotersCount += 1;
+
+      closeConfirmModal();
+      SoundEngine.playSubmitEruption();
+      saveState();
+      renderAllViews();
+      showToast('🎉 開罐充氣成功！已為 5 位選手注入共 600cc 人氣氣泡！', 'gold');
+    }
+
+    /*************************************************************************
+     * 7. STAGE BIG SCREEN VIEW (View 2: Blind Hype Mode & Grand Reveal Mode)
+     *************************************************************************/
+    function getSortedContestants() {
+      // Sort by Total CC descending; Tie-breaker: goldCount descending!
+      return [...appState.candidates].sort((a, b) => {
+        if (b.cc !== a.cc) return b.cc - a.cc;
+        return b.goldCount - a.goldCount;
+      });
+    }
+
+    // Real Scannable QR Code Renderer (Supports QRCode.js + API Image Fallback)
+    let lastRenderedQrString = '';
+    function renderRealQrCodes(force = false) {
+      const targetUrl = (appState.qrUrl || 'https://line.me').trim();
+      const targetTitle = (appState.qrTitle || '打開 LINE 掃描領取 5 罐人氣可樂').trim();
+
+      const titleEl = document.getElementById('screen-qr-title-display');
+      if (titleEl) titleEl.textContent = targetTitle;
+
+      const previewEl = document.getElementById('screen-qr-url-preview');
+      if (previewEl) previewEl.textContent = targetUrl;
+
+      const urlInput = document.getElementById('admin-qr-url-input');
+      if (urlInput && document.activeElement !== urlInput) {
+        urlInput.value = targetUrl;
+      }
+      const titleInput = document.getElementById('admin-qr-title-input');
+      if (titleInput && document.activeElement !== titleInput) {
+        titleInput.value = targetTitle;
+      }
+
+      if (!force && lastRenderedQrString === targetUrl) return;
+      lastRenderedQrString = targetUrl;
+
+      const containerIds = ['stage-qrcode-canvas', 'admin-qrcode-canvas'];
+      containerIds.forEach(id => {
+        const box = document.getElementById(id);
+        if (!box) return;
+        box.innerHTML = '';
+
+        if (typeof QRCode !== 'undefined') {
+          try {
+            new QRCode(box, {
+              text: targetUrl,
+              width: 220,
+              height: 220,
+              colorDark: '#110606',
+              colorLight: '#ffffff',
+              correctLevel: QRCode.CorrectLevel.H
+            });
+            return;
+          } catch (err) {
+            console.warn('QRCode.js fallback triggered:', err);
+          }
+        }
+
+        // Fallback if CDN is blocked
+        const fallbackImg = document.createElement('img');
+        fallbackImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&ecc=H&data=${encodeURIComponent(targetUrl)}`;
+        fallbackImg.alt = 'Scan QR Code';
+        fallbackImg.className = 'w-full h-full object-contain';
+        box.appendChild(fallbackImg);
+      });
+    }
+
+    function handleQrConfigChange(showFeedback = false) {
+      const urlInput = document.getElementById('admin-qr-url-input');
+      const titleInput = document.getElementById('admin-qr-title-input');
+      if (urlInput) {
+        appState.qrUrl = urlInput.value.trim() || 'https://line.me';
+      }
+      if (titleInput) {
+        appState.qrTitle = titleInput.value.trim() || '打開 LINE 掃描領取 5 罐人氣可樂';
+      }
+      saveState();
+      renderRealQrCodes(true);
+      if (showFeedback) {
+        showToast('✅ 已更新真實可掃描 QR 碼！現在可拿手機掃描測試', 'gold');
+      }
+    }
+
+    function applyQuickQrUrl(url) {
+      const cleanUrl = (url && url.startsWith('http')) ? url : 'https://line.me';
+      appState.qrUrl = cleanUrl;
+      const urlInput = document.getElementById('admin-qr-url-input');
+      if (urlInput) urlInput.value = cleanUrl;
+      saveState();
+      renderRealQrCodes(true);
+      showToast(`🔗 已套用網址：${cleanUrl}`, 'gold');
+    }
+
+    function downloadQrCodeImage() {
+      const box = document.getElementById('admin-qrcode-canvas') || document.getElementById('stage-qrcode-canvas');
+      if (!box) return;
+      const canvas = box.querySelector('canvas');
+      const img = box.querySelector('img');
+
+      let dataUrl = '';
+      if (canvas) {
+        dataUrl = canvas.toDataURL('image/png');
+      } else if (img && img.src) {
+        dataUrl = img.src;
+      }
+
+      if (!dataUrl) {
+        showToast('無法取得 QR 碼圖檔，請稍後再試', 'warn');
+        return;
+      }
+
+      const link = document.createElement('a');
+      link.download = '歌唱比賽_人氣可樂投票_QRCode.png';
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('📥 已開始下載 QR 碼圖片！可直接印製於海報或入場桌卡', 'gold');
+    }
+
+    function renderBigScreenView() {
+      renderRealQrCodes();
+      // 1. Update Voter Count & Total Tank CC
+      const voterCount = appState.totalVotersCount;
+      const maxAud = appState.maxExpectedAudience || 100;
+      const pct = Math.min(100, Math.round((voterCount / maxAud) * 100));
+
+      document.getElementById('screen-voter-count').textContent = `${voterCount} / ${maxAud} 人`;
+      document.getElementById('screen-voter-bar').style.width = `${pct}%`;
+
+      let totalCC = 0;
+      let totalGold = 0;
+      let totalRed = 0;
+      appState.candidates.forEach(c => {
+        totalCC += c.cc;
+        totalGold += c.goldCount;
+        totalRed += c.redCount;
+      });
+
+      document.getElementById('screen-total-cc').textContent = totalCC.toLocaleString();
+      document.getElementById('screen-total-cans-badge').textContent = `累計 ${totalGold + totalRed} 罐可樂`;
+      document.getElementById('screen-gold-cans-count').textContent = `${totalGold} 罐`;
+      document.getElementById('screen-red-cans-count').textContent = `${totalRed} 罐`;
+      document.getElementById('screen-tank-liquid').style.height = `${Math.max(12, Math.min(92, pct))}%`;
+
+      // 2. Status Badge & Mode Toggle
+      const statusBadge = document.getElementById('screen-status-badge');
+      const blindPanel = document.getElementById('screen-blind-panel');
+      const revealPanel = document.getElementById('screen-reveal-panel');
+      const quickRevealLabel = document.getElementById('screen-quick-reveal-label');
+
+      const sorted = getSortedContestants();
+
+      if (appState.phase !== 'CLOSED') {
+        // BLIND HYPE MODE
+        statusBadge.textContent = appState.phase === 'PRE_SELECT' ? '🧊 預選冰鎮階段' : '🔥 開放充氣催票中';
+        statusBadge.className = 'text-xs px-3 py-1 rounded-full bg-red-500/20 text-red-300 border border-red-400/40 font-bold';
+        quickRevealLabel.textContent = '封盤並揭曉人氣王';
+
+        blindPanel.classList.remove('hidden');
+        blindPanel.classList.add('flex');
+        revealPanel.classList.add('hidden');
+        revealPanel.classList.remove('flex');
+
+        // Render Top 8 Anonymous Mystery Fizzing Cans
+        // Shuffle or display Top 8 as Mystery Cans A-H
+        const top8 = sorted.slice(0, 8);
+        const maxCC = Math.max(600, top8[0]?.cc || 600);
+        const mysteryLabels = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+
+        const mysteryGrid = document.getElementById('mystery-cans-grid');
+        mysteryGrid.innerHTML = top8.map((c, idx) => {
+          const fillRatio = Math.min(100, Math.round((c.cc / maxCC) * 100));
+          const isHot = idx < 3;
+          return `
+            <div class="rounded-2xl bg-[#1a0808] border ${isHot ? 'border-amber-500/60 shadow-[0_0_20px_rgba(251,191,36,0.18)]' : 'border-red-900/60'} p-3.5 flex flex-col items-center justify-between relative overflow-hidden">
+              <div class="w-full flex items-center justify-between text-[11px] font-bold mb-2">
+                <span class="px-2 py-0.5 rounded bg-white/10 text-white">神秘罐 ${mysteryLabels[idx]}</span>
+                <span class="text-amber-300 font-mono">${c.cc} cc</span>
+              </div>
+
+              <!-- Shaking Mystery Cola Can -->
+              <div class="my-2 animate-mystery-fizz" style="animation-duration: ${1.2 + idx * 0.15}s">
+                <div class="w-16 h-24 rounded-xl ${isHot ? 'can-body-gold' : 'can-body-red'} flex flex-col items-center justify-center border-y-2 border-white/40 shadow-lg relative">
+                  <span class="text-2xl font-black ${isHot ? 'text-stone-950' : 'text-white'}">?</span>
+                  <span class="text-[9px] font-black uppercase tracking-tighter ${isHot ? 'text-stone-900' : 'text-red-100'}">TOP FIZZ</span>
+                </div>
+              </div>
+
+              <!-- Fizz Meter Bar -->
+              <div class="w-full mt-2">
+                <div class="flex justify-between text-[10px] text-red-200/70 mb-1">
+                  <span>👑 金罐 × ${c.goldCount}</span>
+                  <span>🥤 紅罐 × ${c.redCount}</span>
+                </div>
+                <div class="w-full h-2 bg-red-950 rounded-full overflow-hidden">
+                  <div class="h-full bg-gradient-to-r from-cola-red to-cola-gold transition-all duration-500" style="width: ${fillRatio}%"></div>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+      } else {
+        // GRAND REVEAL MODE
+        statusBadge.textContent = '🏆 已封盤・揭曉最佳人氣獎';
+        statusBadge.className = 'text-xs px-3 py-1 rounded-full bg-cola-gold text-stone-950 font-black';
+        quickRevealLabel.textContent = '返回盲盒催票畫面';
+
+        blindPanel.classList.add('hidden');
+        blindPanel.classList.remove('flex');
+        revealPanel.classList.remove('hidden');
+        revealPanel.classList.add('flex');
+
+        const winner = sorted[0];
+        const runnerUp = sorted[1];
+        const wonByTieBreaker = winner && runnerUp && winner.cc === runnerUp.cc && winner.goldCount > runnerUp.goldCount;
+
+        const spotlightEl = document.getElementById('winner-spotlight-card');
+        if (winner) {
+          spotlightEl.innerHTML = `
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4 relative z-10">
+              <div class="flex items-center gap-4">
+                <div class="w-20 h-28 rounded-2xl can-body-gold border-2 border-white flex flex-col items-center justify-center shadow-2xl shrink-0 animate-can-pop">
+                  <span class="text-xs font-mono font-black text-stone-900">#${winner.num}</span>
+                  <span class="text-2xl">👑</span>
+                  <span class="text-[9px] font-black text-stone-950 mt-0.5">WINNER</span>
+                </div>
+                <div>
+                  <div class="flex flex-wrap items-center gap-2 mb-1">
+                    <span class="px-2.5 py-0.5 rounded-full bg-cola-gold text-stone-950 font-black text-xs">
+                      🏆 全場最佳人氣獎得主
+                    </span>
+                    ${wonByTieBreaker ? `
+                      <span class="px-2.5 py-0.5 rounded-full bg-red-600 text-white font-black text-xs border border-amber-300 animate-pulse">
+                        ⚖️ 同分破局勝出（黃金特調罐較多！）
+                      </span>
+                    ` : ''}
+                  </div>
+                  <h2 class="text-2xl sm:text-4xl font-black text-white tracking-tight">
+                    #${winner.num} ${escapeHtml(winner.name)}
+                    <span class="text-base sm:text-xl font-bold text-amber-300 ml-1">《${escapeHtml(winner.song)}》</span>
+                  </h2>
+                  <div class="flex flex-wrap items-center gap-3 mt-2 text-xs font-bold text-amber-100">
+                    <span class="px-2.5 py-1 rounded-lg bg-black/40 border border-amber-400/40">
+                      👑 黃金特調罐：<strong class="text-cola-gold text-sm">${winner.goldCount} 罐</strong> (+${winner.goldCount * 200}cc)
+                    </span>
+                    <span class="px-2.5 py-1 rounded-lg bg-black/40 border border-red-400/40">
+                      🥤 經典紅罐：<strong class="text-red-300 text-sm">${winner.redCount} 罐</strong> (+${winner.redCount * 100}cc)
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="text-center sm:text-right bg-black/45 px-5 py-3 rounded-2xl border border-cola-gold/50 shrink-0">
+                <div class="text-xs text-amber-300 font-bold">總累積人氣氣泡量</div>
+                <div class="font-display text-3xl sm:text-5xl font-black text-cola-gold">${winner.cc.toLocaleString()} <span class="text-lg">cc</span></div>
+              </div>
+            </div>
+          `;
+        }
+
+        // Full Ranking List
+        const maxScore = Math.max(100, winner?.cc || 100);
+        const listEl = document.getElementById('full-ranking-list');
+        listEl.innerHTML = sorted.map((c, idx) => {
+          const rank = idx + 1;
+          const pctWidth = Math.max(6, Math.round((c.cc / maxScore) * 100));
+          const isFirst = rank === 1;
+          return `
+            <div class="p-2.5 sm:px-4 rounded-xl ${isFirst ? 'bg-amber-500/20 border-2 border-cola-gold' : 'bg-[#1a0808] border border-red-900/50'} flex items-center gap-3">
+              <div class="w-7 h-7 rounded-lg ${isFirst ? 'bg-cola-gold text-stone-950 font-black' : 'bg-red-950 text-red-200 font-bold'} flex items-center justify-center text-xs shrink-0">
+                ${isFirst ? '👑' : rank}
+              </div>
+              <div class="w-36 sm:w-48 shrink-0 truncate">
+                <span class="text-xs font-mono text-amber-300 font-bold">#${c.num}</span>
+                <span class="text-xs sm:text-sm font-black text-white ml-1">${escapeHtml(c.name)}</span>
+                <span class="text-[11px] text-red-200/70 ml-1 hidden sm:inline">《${escapeHtml(c.song)}》</span>
+              </div>
+              <div class="flex-1 h-3 bg-red-950 rounded-full overflow-hidden">
+                <div class="h-full ${isFirst ? 'bg-gradient-to-r from-amber-400 to-cola-red' : 'bg-gradient-to-r from-cola-red to-amber-500/80'}" style="width: ${pctWidth}%"></div>
+              </div>
+              <div class="shrink-0 text-right flex items-center gap-2 text-xs">
+                <span class="px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 font-mono text-[11px]">👑${c.goldCount}</span>
+                <span class="px-1.5 py-0.5 rounded bg-red-500/15 text-red-300 font-mono text-[11px]">🥤${c.redCount}</span>
+                <span class="font-mono font-black text-white w-16 text-right">${c.cc} cc</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    function quickToggleRevealFromScreen() {
+      if (appState.phase === 'CLOSED') {
+        setCompetitionPhase('VOTING_OPEN');
+      } else {
+        setCompetitionPhase('CLOSED');
+      }
+    }
+
+    /*************************************************************************
+     * 8. ADMIN PANEL LOGIC (Stage Controller, Crowd Simulator, Roster Editor)
+     *************************************************************************/
+    function setCompetitionPhase(newPhase) {
+      appState.phase = newPhase;
+      if (newPhase === 'CLOSED') {
+        SoundEngine.playSubmitEruption();
+        showToast('🏆 已封盤截止！舞台大螢幕已切換至最佳人氣獎揭曉畫面', 'gold');
+      } else if (newPhase === 'VOTING_OPEN') {
+        SoundEngine.playCanPop();
+        showToast('🔥 已正式開放全場觀眾開罐投票！', 'gold');
+      } else {
+        showToast('🧊 已切換為「預選冰鎮階段」（觀眾可預選，送出鈕鎖定）', 'info');
+      }
+      saveState();
+      renderAllViews();
+    }
+
+    function renderAdminView() {
+      renderRealQrCodes();
+      // Highlight active phase button
+      const phases = ['PRE_SELECT', 'VOTING_OPEN', 'CLOSED'];
+      phases.forEach(p => {
+        const btn = document.getElementById(`admin-phase-btn-${p}`);
+        if (!btn) return;
+        if (appState.phase === p) {
+          btn.className = 'w-full p-3.5 rounded-2xl border-2 border-cola-gold bg-amber-500/15 text-left transition flex items-start gap-3 shadow-lg';
+        } else {
+          btn.className = 'w-full p-3.5 rounded-2xl border border-red-900/60 bg-[#170707] hover:border-red-700 text-left transition flex items-start gap-3 opacity-80';
+        }
+      });
+
+      // Roster Count & Live Editable List
+      document.getElementById('admin-roster-count').textContent = `目前 ${appState.candidates.length} / 30 位`;
+      const listEl = document.getElementById('admin-contestant-list');
+      listEl.innerHTML = appState.candidates.map(c => `
+        <div class="p-2 rounded-xl bg-[#160707] border border-red-950 hover:border-red-800/80 grid grid-cols-12 gap-1.5 items-center transition">
+          <!-- Editable Number -->
+          <div class="col-span-2">
+            <input 
+              type="text" 
+              value="${escapeHtml(c.num)}" 
+              onchange="updateContestantField('${c.id}', 'num', this.value)"
+              class="w-full px-2 py-1.5 rounded-lg bg-red-950/90 border border-red-800/60 text-amber-300 font-mono font-bold text-xs text-center focus:outline-none focus:border-cola-gold"
+              title="點擊修改選手編號"
+            />
+          </div>
+          <!-- Editable Name -->
+          <div class="col-span-4">
+            <input 
+              type="text" 
+              value="${escapeHtml(c.name)}" 
+              onchange="updateContestantField('${c.id}', 'name', this.value)"
+              placeholder="選手姓名"
+              class="w-full px-2.5 py-1.5 rounded-lg bg-[#240d0d] border border-red-900/60 text-white font-bold text-xs focus:outline-none focus:border-cola-gold"
+              title="點擊直接修改選手姓名"
+            />
+          </div>
+          <!-- Editable Song Title -->
+          <div class="col-span-4">
+            <input 
+              type="text" 
+              value="${escapeHtml(c.song)}" 
+              onchange="updateContestantField('${c.id}', 'song', this.value)"
+              placeholder="演唱曲目"
+              class="w-full px-2.5 py-1.5 rounded-lg bg-[#240d0d] border border-red-900/60 text-red-100 text-xs focus:outline-none focus:border-cola-gold"
+              title="點擊直接修改演唱曲目"
+            />
+          </div>
+          <!-- Score & Delete -->
+          <div class="col-span-2 flex items-center justify-end gap-1.5">
+            <span class="hidden sm:inline text-[10px] font-mono text-amber-300/90" title="目前得票氣泡量">${c.cc}cc</span>
+            <button onclick="deleteContestant('${c.id}')" title="刪除此選手" class="w-7 h-7 rounded-lg bg-red-950/80 hover:bg-red-600 text-red-200 hover:text-white text-xs flex items-center justify-center transition shrink-0">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Live inline update for Contestant Number, Name, or Song
+    function updateContestantField(cid, field, newValue) {
+      const target = appState.candidates.find(c => c.id === cid);
+      if (!target) return;
+      const trimmed = newValue.trim();
+      if (!trimmed) {
+        showToast('欄位內容不能為空白喔！', 'warn');
+        renderAdminView();
+        return;
+      }
+      target[field] = trimmed;
+      saveState();
+      renderMobileView();
+      renderBigScreenView();
+      showToast(`✏️ 已即時更新選手資料：#${target.num} ${target.name}《${target.song}》`, 'gold');
+    }
+
+    function toggleBulkImportPanel() {
+      const drawer = document.getElementById('bulk-import-drawer');
+      if (!drawer) return;
+      drawer.classList.toggle('hidden');
+    }
+
+    function fillSampleBulkText() {
+      const textarea = document.getElementById('bulk-import-textarea');
+      if (!textarea) return;
+      textarea.value = [
+        '01 王小明 告白氣球',
+        '02 林小美 勇氣',
+        '03 陳大天 演員',
+        '04 張小華 稻香',
+        '05 李小龍 雙截棍',
+        '06 趙小雲 修煉愛情',
+        '07 周小倫 晴天',
+        '08 蔡小依 日不落',
+        '09 孫小燕 遇見',
+        '10 張小韶 隱形的翅膀'
+      ].join('\n');
+    }
+
+    function processBulkContestants(mode) {
+      const textarea = document.getElementById('bulk-import-textarea');
+      if (!textarea || !textarea.value.trim()) {
+        showToast('請先在文字框貼上選手名單！', 'warn');
+        return;
+      }
+
+      const lines = textarea.value
+        .split(/\r?\n/)
+        .map(l => l.trim())
+        .filter(Boolean);
+
+      const parsedList = [];
+      lines.forEach((line, idx) => {
+        // Support space, tab, or comma separated lines: "01 王小明 告白氣球" or "王小明 告白氣球"
+        const parts = line.split(/[\s,，\t]+/).filter(Boolean);
+        let num = '';
+        let name = '';
+        let song = '自選參賽曲';
+
+        if (parts.length >= 3 && /^\d+$/.test(parts[0].replace('#', ''))) {
+          num = parts[0].replace('#', '').padStart(2, '0');
+          name = parts[1];
+          song = parts.slice(2).join(' ');
+        } else if (parts.length === 2) {
+          if (/^\d+$/.test(parts[0].replace('#', ''))) {
+            num = parts[0].replace('#', '').padStart(2, '0');
+            name = parts[1];
+          } else {
+            name = parts[0];
+            song = parts[1];
+          }
+        } else if (parts.length >= 1) {
+          name = parts[0];
+          if (parts.length > 1) song = parts.slice(1).join(' ');
+        }
+
+        if (name) {
+          parsedList.push({
+            id: 'c_' + Date.now() + '_' + idx,
+            num: num || '',
+            name,
+            song,
+            cc: 0,
+            goldCount: 0,
+            redCount: 0
+          });
+        }
+      });
+
+      if (parsedList.length === 0) {
+        showToast('解析失敗，請確認格式為「編號 姓名 歌名」', 'warn');
+        return;
+      }
+
+      if (mode === 'REPLACE') {
+        if (parsedList.length < 5) {
+          showToast('因為每位觀眾需投滿 5 票，覆蓋名單至少需要 5 位選手喔！', 'warn');
+          return;
+        }
+        const finalRoster = parsedList.slice(0, 30).map((item, i) => ({
+          ...item,
+          num: item.num || String(i + 1).padStart(2, '0')
+        }));
+        appState.candidates = finalRoster;
+        appState.totalVotersCount = 0;
+        appState.submittedBallots = {};
+        Object.keys(appState.draftCoolers).forEach(uid => {
+          appState.draftCoolers[uid] = { gold: null, reds: [] };
+        });
+        showToast(`🎉 已成功覆蓋匯入 ${finalRoster.length} 位參賽選手！`, 'gold');
+      } else {
+        // APPEND mode
+        const availableSlots = 30 - appState.candidates.length;
+        if (availableSlots <= 0) {
+          showToast('選手名單已達 30 位上限，無法再附加！', 'warn');
+          return;
+        }
+        const toAdd = parsedList.slice(0, availableSlots);
+        toAdd.forEach((item) => {
+          const nextNum = item.num || String(appState.candidates.length + 1).padStart(2, '0');
+          appState.candidates.push({
+            ...item,
+            num: nextNum
+          });
+        });
+        showToast(`✅ 已成功附加 ${toAdd.length} 位選手至名單中！`, 'gold');
+      }
+
+      textarea.value = '';
+      document.getElementById('bulk-import-drawer')?.classList.add('hidden');
+      saveState();
+      renderAllViews();
+    }
+
+    function resetToSampleContestants(count = 24) {
+      const sliceCount = Math.max(5, Math.min(24, count));
+      appState.candidates = JSON.parse(JSON.stringify(DEFAULT_CONTESTANTS.slice(0, sliceCount)));
+      // Clean up invalid IDs in draft coolers
+      const validIds = new Set(appState.candidates.map(c => c.id));
+      Object.values(appState.draftCoolers).forEach(cooler => {
+        if (cooler.gold && !validIds.has(cooler.gold)) cooler.gold = null;
+        cooler.reds = cooler.reds.filter(r => validIds.has(r));
+      });
+      saveState();
+      renderAllViews();
+      showToast(`🔄 已載入 ${sliceCount} 位範例選手名單！`, 'gold');
+    }
+
+    // Simulate N random audience members voting (each casts 1 Gold + 4 distinct Reds)
+    function simulateBatchVotes(count) {
+      if (appState.candidates.length < 5) {
+        showToast('選手人數不足 5 人，無法模擬投票', 'warn');
+        return;
+      }
+
+      for (let v = 0; v < count; v++) {
+        // Pick 5 distinct random candidates
+        const pool = [...appState.candidates];
+        for (let i = pool.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [pool[i], pool[j]] = [pool[j], pool[i]];
+        }
+        const picks = pool.slice(0, 5);
+        // First one gets Gold (+200cc), next 4 get Red (+100cc)
+        picks[0].cc += 200;
+        picks[0].goldCount += 1;
+        for (let k = 1; k < 5; k++) {
+          picks[k].cc += 100;
+          picks[k].redCount += 1;
+        }
+      }
+
+      appState.totalVotersCount = Math.min(100, appState.totalVotersCount + count);
+      SoundEngine.playCanPop();
+      saveState();
+      renderAllViews();
+      showToast(`🤖 已成功模擬 +${count} 位觀眾開罐投票（共注入 +${count * 600}cc 氣泡）！`, 'gold');
+    }
+
+    function simulateFillToCrowd(targetVoters) {
+      const diff = Math.max(5, targetVoters - appState.totalVotersCount);
+      simulateBatchVotes(diff);
+    }
+
+    // Simulate an exact 1st-place total CC tie so the organizer can see the Golden Can tie-breaker in action!
+    function simulateTieBreakerScenario() {
+      if (appState.candidates.length < 2) return;
+      // Pick #06 田馥甄 and #13 林俊傑 (or first two)
+      const cA = appState.candidates.find(c => c.id === 'c06') || appState.candidates[0];
+      const cB = appState.candidates.find(c => c.id === 'c13') || appState.candidates[1];
+
+      // Set both to 3,600 cc, but cA has 12 Gold Cans (12*200 + 12*100 = 3600) while cB has 6 Gold Cans (6*200 + 24*100 = 3600)
+      cA.goldCount = 12;
+      cA.redCount = 12;
+      cA.cc = 3600;
+
+      cB.goldCount = 6;
+      cB.redCount = 24;
+      cB.cc = 3600;
+
+      appState.totalVotersCount = 88;
+      appState.phase = 'CLOSED';
+      saveState();
+      switchMainView('screen');
+      SoundEngine.playSubmitEruption();
+      showToast(`⚖️ 已模擬 #${cA.num} 與 #${cB.num} 同為 3,600cc！由黃金罐較多之 #${cA.num} ${cA.name} 破局勝出！`, 'gold');
+    }
+
+    function resetAllVotesData() {
+      appState.candidates.forEach(c => {
+        c.cc = 0;
+        c.goldCount = 0;
+        c.redCount = 0;
+      });
+      appState.totalVotersCount = 0;
+      appState.submittedBallots = {};
+      Object.keys(appState.draftCoolers).forEach(uid => {
+        appState.draftCoolers[uid] = { gold: null, reds: [] };
+      });
+      appState.phase = 'PRE_SELECT';
+      saveState();
+      renderAllViews();
+      showToast('🗑️ 已清空全場選票並回到「預選冰鎮階段」', 'info');
+    }
+
+    function addNewContestant() {
+      if (appState.candidates.length >= 30) {
+        showToast('參賽選手已達 30 位上限！', 'warn');
+        return;
+      }
+      const nameInput = document.getElementById('new-singer-name');
+      const songInput = document.getElementById('new-singer-song');
+      const name = nameInput.value.trim();
+      const song = songInput.value.trim();
+      if (!name || !song) {
+        showToast('請輸入選手姓名與參賽歌曲名稱', 'warn');
+        return;
+      }
+      const nextNum = String(appState.candidates.length + 1).padStart(2, '0');
+      const newId = 'c_' + Date.now();
+      appState.candidates.push({
+        id: newId,
+        num: nextNum,
+        name,
+        song,
+        cc: 0,
+        goldCount: 0,
+        redCount: 0
+      });
+      nameInput.value = '';
+      songInput.value = '';
+      saveState();
+      renderAllViews();
+      showToast(`✅ 已新增 #${nextNum} ${name}《${song}》專屬可樂罐！`, 'gold');
+    }
+
+    function deleteContestant(cid) {
+      if (appState.candidates.length <= 5) {
+        showToast('因為每位觀眾需投滿 5 票，選手人數不能少於 5 位喔！', 'warn');
+        return;
+      }
+      appState.candidates = appState.candidates.filter(c => c.id !== cid);
+      // Clean up from any draft coolers
+      Object.values(appState.draftCoolers).forEach(cooler => {
+        if (cooler.gold === cid) cooler.gold = null;
+        cooler.reds = cooler.reds.filter(r => r !== cid);
+      });
+      saveState();
+      renderAllViews();
+      showToast('已移除該名選手', 'info');
+    }
+
+    /*************************************************************************
+     * 9. NAVIGATION, SEARCH, COUNTDOWN TIMER, AND UTILITIES
+     *************************************************************************/
+    function switchMainView(viewName) {
+      appState.currentView = viewName;
+      const views = ['mobile', 'screen', 'admin', 'code'];
+      views.forEach(v => {
+        const sec = document.getElementById(`view-${v}`);
+        const btn = document.getElementById(`tab-btn-${v}`);
+        if (v === viewName) {
+          sec.classList.remove('hidden');
+          btn.className = 'view-tab-btn px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all whitespace-nowrap flex items-center gap-1.5 bg-cola-red text-white shadow';
+        } else {
+          sec.classList.add('hidden');
+          btn.className = 'view-tab-btn px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all whitespace-nowrap flex items-center gap-1.5 text-red-200/70 hover:text-white';
+        }
+      });
+      renderAllViews();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function renderTopNavStatus() {
+      const pill = document.getElementById('nav-phase-pill');
+      if (appState.phase === 'PRE_SELECT') {
+        pill.textContent = '🧊 預選冰鎮中';
+        pill.className = 'text-[11px] font-bold px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30';
+      } else if (appState.phase === 'VOTING_OPEN') {
+        pill.textContent = '🔥 開放投票中';
+        pill.className = 'text-[11px] font-bold px-2 py-0.5 rounded-full bg-red-500/30 text-amber-300 border border-amber-400/50 animate-pulse';
+      } else {
+        pill.textContent = '🏆 已封盤揭曉';
+        pill.className = 'text-[11px] font-bold px-2 py-0.5 rounded-full bg-cola-gold text-stone-950';
+      }
+    }
+
+    function renderAllViews() {
+      renderTopNavStatus();
+      renderMobileView();
+      renderBigScreenView();
+      renderAdminView();
+    }
+
+    function handleSearchAndFilter() {
+      const input = document.getElementById('search-input');
+      const clearBtn = document.getElementById('clear-search-btn');
+      appState.searchQuery = input.value;
+      if (appState.searchQuery.length > 0) {
+        clearBtn.classList.remove('hidden');
+      } else {
+        clearBtn.classList.add('hidden');
+      }
+      renderMobileView();
+    }
+
+    function clearSearchInput() {
+      const input = document.getElementById('search-input');
+      input.value = '';
+      appState.searchQuery = '';
+      document.getElementById('clear-search-btn').classList.add('hidden');
+      renderMobileView();
+    }
+
+    function toggleFilterOnlySelected() {
+      appState.filterOnlySelected = !appState.filterOnlySelected;
+      renderMobileView();
+    }
+
+    // Simulated LINE User Switcher Modal
+    function openSwitchUserModal() {
+      const listEl = document.getElementById('simulated-users-list');
+      listEl.innerHTML = SIMULATED_LINE_USERS.map((u, idx) => {
+        const isCurrent = idx === appState.currentLineUserIndex;
+        const hasVoted = Boolean(appState.submittedBallots[u.uid]);
+        const cooler = appState.draftCoolers[u.uid] || { gold: null, reds: [] };
+        const count = getCoolerTotalCount(cooler);
+
+        return `
+          <button onclick="selectSimulatedLineUser(${idx})" class="w-full p-3 rounded-2xl border ${isCurrent ? 'border-[#06C755] bg-emerald-950/40' : 'border-red-900/60 bg-[#160707] hover:border-red-700'} flex items-center justify-between transition text-left">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-full bg-gradient-to-tr ${u.color} flex items-center justify-center text-white font-black text-sm border border-white/60">
+                ${u.short}
+              </div>
+              <div>
+                <div class="text-xs font-bold text-white">${u.name}</div>
+                <div class="text-[10px] text-red-200/70">UID: ${u.uid}</div>
+              </div>
+            </div>
+            <div>
+              ${hasVoted ? `
+                <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold">✅ 已開罐送出</span>
+              ` : `
+                <span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-bold">🧊 冰桶 ${count}/5 罐</span>
+              `}
+            </div>
+          </button>
+        `;
+      }).join('');
+
+      const modal = document.getElementById('switch-user-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeSwitchUserModal() {
+      const modal = document.getElementById('switch-user-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function selectSimulatedLineUser(index) {
+      appState.currentLineUserIndex = index;
+      saveState();
+      closeSwitchUserModal();
+      renderAllViews();
+      const u = getCurrentUser();
+      showToast(`已切換為「${u.name}」的手機視角`, 'info');
+    }
+
+    // Countdown Timer Functions
+    function formatMMSS(sec) {
+      const m = String(Math.floor(sec / 60)).padStart(2, '0');
+      const s = String(sec % 60).padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    function updateTimerUI() {
+      const text = formatMMSS(timerSeconds);
+      const adminDisplay = document.getElementById('admin-timer-display');
+      const globalText = document.getElementById('global-timer-text');
+      if (adminDisplay) adminDisplay.textContent = text;
+      if (globalText) globalText.textContent = text;
+    }
+
+    function startCountdownTimer(seconds) {
+      if (seconds && timerSeconds <= 0) timerSeconds = seconds;
+      if (appState.phase !== 'VOTING_OPEN') {
+        setCompetitionPhase('VOTING_OPEN');
+      }
+      clearInterval(timerInterval);
+      const badge = document.getElementById('global-timer-badge');
+      badge.classList.remove('hidden');
+      badge.classList.add('flex');
+
+      timerInterval = setInterval(() => {
+        if (timerSeconds > 0) {
+          timerSeconds--;
+          updateTimerUI();
+        } else {
+          clearInterval(timerInterval);
+          setCompetitionPhase('CLOSED');
+        }
+      }, 1000);
+      showToast('⏱️ 已啟動全場投票倒數計時！', 'gold');
+    }
+
+    function stopCountdownTimer() {
+      clearInterval(timerInterval);
+      showToast('已暫停倒數計時', 'info');
+    }
+
+    function resetCountdownTimer(seconds = 180) {
+      clearInterval(timerInterval);
+      timerSeconds = seconds;
+      updateTimerUI();
+      const badge = document.getElementById('global-timer-badge');
+      badge.classList.add('hidden');
+      badge.classList.remove('flex');
+    }
+
+    // Copy Code Helper using execCommand('copy')
+    function copyCodeBlock(preId, btnEl) {
+      const pre = document.getElementById(preId);
+      if (!pre) return;
+      const textarea = document.createElement('textarea');
+      textarea.value = pre.innerText;
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        const originalHTML = btnEl.innerHTML;
+        btnEl.innerHTML = `<i class="fa-solid fa-check"></i> <span>已複製！</span>`;
+        setTimeout(() => {
+          btnEl.innerHTML = originalHTML;
+        }, 2000);
+        showToast('✅ 程式碼已複製到剪貼簿！', 'gold');
+      } catch (e) {}
+      document.body.removeChild(textarea);
+    }
+
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+
+    // Non-blocking Toast Message Box
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      let colors = 'bg-[#2a0f0f]/95 border-red-500 text-white';
+      if (type === 'gold') colors = 'bg-gradient-to-r from-amber-950/95 via-[#381a05]/95 to-amber-950/95 border-cola-gold text-amber-200';
+      if (type === 'warn') colors = 'bg-red-950/95 border-amber-400 text-amber-200';
+
+      toast.className = `px-4 py-2.5 rounded-2xl border-2 ${colors} shadow-2xl text-xs font-bold flex items-center gap-2 transition-all duration-300 pointer-events-auto backdrop-blur-md`;
+      toast.innerHTML = `<span>${message}</span>`;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-8px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 2800);
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    /*************************************************************************
+     * 10. BACKGROUND RISING FIZZ BUBBLES CANVAS ANIMATION
+     *************************************************************************/
+    function initFizzCanvas() {
+      const canvas = document.getElementById('fizz-bg-canvas');
+      const ctx = canvas.getContext('2d');
+      let width = canvas.width = window.innerWidth;
+      let height = canvas.height = window.innerHeight;
+
+      window.addEventListener('resize', () => {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+      });
+
+      const bubbles = Array.from({ length: 38 }, () => ({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        r: Math.random() * 3.2 + 1.2,
+        speed: Math.random() * 0.9 + 0.35,
+        wobble: Math.random() * Math.PI * 2,
+        isGold: Math.random() > 0.62
+      }));
+
+      function animateFizz() {
+        ctx.clearRect(0, 0, width, height);
+        for (const b of bubbles) {
+          b.y -= b.speed;
+          b.wobble += 0.03;
+          const drawX = b.x + Math.sin(b.wobble) * 0.6;
+
+          if (b.y < -10) {
+            b.y = height + 10;
+            b.x = Math.random() * width;
+          }
+
+          ctx.beginPath();
+          ctx.arc(drawX, b.y, b.r, 0, Math.PI * 2);
+          ctx.fillStyle = b.isGold
+            ? 'rgba(251, 191, 36, 0.28)'
+            : 'rgba(248, 113, 113, 0.20)';
+          ctx.fill();
+        }
+        requestAnimationFrame(animateFizz);
+      }
+
+      animateFizz();
+    }
+
+    // Initialize Application on Load
+    window.onload = function () {
+      loadSavedState();
+      initFizzCanvas();
+      renderAllViews();
+    };
+  </script>
+</body>
+</html>
